@@ -31,8 +31,88 @@ What would your total score be if everything goes exactly according to your stra
  */
 
 pub fn part_one(input: &str) -> Option<u32> {
-    None
+    let split: Vec<&str> = input.lines().collect();
+
+    let mut scores: Vec<u32> = Vec::new();
+    scores.push(calculate_score(&split, Play::Rock, Play::Paper, Play::Scissors));
+    scores.push(calculate_score(&split, Play::Scissors, Play::Rock, Play::Paper));
+    scores.push(calculate_score(&split, Play::Paper, Play::Scissors, Play::Rock));
+
+    scores.sort();
+    scores.reverse();
+
+    Some(scores[0])
 }
+
+#[derive(Clone)]
+enum Play {
+    Rock,
+    Paper,
+    Scissors
+}
+
+fn calculate_score(rounds: &Vec<&str>, x_val: Play, y_val: Play, z_val: Play) -> u32 {
+    let mut score = 0;
+
+    for round in rounds {
+        let (my_play, their_play) = line_to_plays(
+            round, 
+            x_val.clone(), 
+            y_val.clone(), 
+            z_val.clone()
+        );
+
+        // Add rps score
+        score += match my_play {
+            Play::Rock => 1,
+            Play::Paper => 2,
+            Play::Scissors => 3,
+        };
+
+        // Add win/lose score
+        score += match my_play {
+            Play::Rock => {
+                match their_play {
+                    Play::Rock => 3,
+                    Play::Paper => 0,
+                    Play::Scissors => 6
+                }
+            },
+            Play::Paper => {
+                match their_play {
+                    Play::Rock => 6,
+                    Play::Paper => 3,
+                    Play::Scissors => 0,
+                }
+            },
+            Play::Scissors => {
+                match their_play {
+                    Play::Rock => 0,
+                    Play:: Paper => 6,
+                    Play::Scissors => 3,
+                }
+            },
+        };
+    }
+
+    score
+}
+
+fn line_to_plays(line: &str, x_val: Play, y_val: Play, z_val: Play) -> (Play, Play) {
+    let my_play = match line.chars().nth(0).unwrap() {
+        'A' => Play::Rock,
+        'B' => Play::Paper,
+        _ => Play::Scissors,
+    };
+    let their_play = match line.chars().nth(2).unwrap() {
+        'X' => x_val,
+        'Y' => y_val,
+        _ => z_val,
+    };
+
+    (my_play, their_play)
+}
+
 
 pub fn part_two(input: &str) -> Option<u32> {
     None
@@ -51,7 +131,7 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 2);
-        assert_eq!(part_one(&input), None);
+        assert_eq!(part_one(&input), Some(15 as u32));
     }
 
     #[test]
