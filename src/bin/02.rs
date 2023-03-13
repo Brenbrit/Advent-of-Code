@@ -30,10 +30,29 @@ In this example, if you were to follow the strategy guide, you would get a total
 What would your total score be if everything goes exactly according to your strategy guide?
  */
 
+/*
+--- Part Two ---
+
+The Elf finishes helping with the tent and sneaks back over to you. "Anyway, the second column says how the round needs to end: X means you need to lose, Y means you need to end the round in a draw, and Z means you need to win. Good luck!"
+
+The total score is still calculated in the same way, but now you need to figure out what shape to choose so the round ends as indicated. The example above now goes like this:
+
+    In the first round, your opponent will choose Rock (A), and you need the round to end in a draw (Y), so you also choose Rock. This gives you a score of 1 + 3 = 4.
+    In the second round, your opponent will choose Paper (B), and you choose Rock so you lose (X) with a score of 1 + 0 = 1.
+    In the third round, you will defeat your opponent's Scissors with Rock for a score of 1 + 6 = 7.
+
+Now that you're correctly decrypting the ultra top secret strategy guide, you would get a total score of 12.
+
+Following the Elf's instructions for the second column, what would your total score be if everything goes exactly according to your strategy guide?
+
+ */
+
 pub fn part_one(input: &str) -> Option<u32> {
     let split: Vec<&str> = input.lines().collect();
 
-    Some(calculate_score_1(&split, Play::Rock, Play::Paper, Play::Scissors))
+    let plays = &split.into_iter().map(|line| line_to_plays_1(line)).collect();
+
+    Some(calculate_score(plays))
 }
 
 #[derive(Clone, Debug)]
@@ -43,16 +62,10 @@ enum Play {
     Scissors
 }
 
-fn calculate_score_1(rounds: &Vec<&str>, x_val: Play, y_val: Play, z_val: Play) -> u32 {
+fn calculate_score(rounds: &Vec<(Play, Play)>) -> u32 {
     let mut score = 0;
 
-    for round in rounds {
-        let (my_play, their_play) = line_to_plays_1(
-            round, 
-            x_val.clone(), 
-            y_val.clone(), 
-            z_val.clone()
-        );
+    for (my_play, their_play) in rounds {
 
         // Add rps score
         let rps_score = match my_play {
@@ -88,82 +101,59 @@ fn calculate_score_1(rounds: &Vec<&str>, x_val: Play, y_val: Play, z_val: Play) 
 
         score += rps_score + win_score;
 
-        println!("{}: {:?} vs {:?}. Score increase: {} ({}+{})", round, their_play, my_play, rps_score + win_score, rps_score, win_score);
     }
 
     score
 }
 
-fn line_to_plays_1(line: &str, x_val: Play, y_val: Play, z_val: Play) -> (Play, Play) {
+fn line_to_plays_1(line: &str) -> (Play, Play) {
     let their_play = match line.chars().nth(0).unwrap() {
         'A' => Play::Rock,
         'B' => Play::Paper,
         _ => Play::Scissors,
     };
     let my_play = match line.chars().nth(2).unwrap() {
-        'X' => x_val,
-        'Y' => y_val,
-        _ => z_val,
+        'X' => Play::Rock,
+        'Y' => Play::Paper,
+        _ => Play::Scissors,
     };
 
     (my_play, their_play)
 }
 
-fn calculate_score_2(rounds: &Vec<&str>, x_val: Play, y_val: Play, z_val: Play) -> u32 {
-    let mut score = 0;
+fn line_to_plays_2(line: &str) -> (Play, Play) {
+    let their_play = match line.chars().nth(0).unwrap() {
+        'A' => Play::Rock,
+        'B' => Play::Paper,
+        _ => Play::Scissors,
+    };
+    let my_play = match line.chars().nth(2).unwrap() {
+        'X' => match their_play {
+            // we need to lose
+            Play::Rock => Play::Scissors,
+            Play::Paper => Play::Rock,
+            Play::Scissors => Play::Paper,
+        },
+        // Y: we need to draw
+        'Y' => their_play.clone(),
+        _ => match their_play {
+            // we need to win
+            Play::Rock => Play::Paper,
+            Play::Paper => Play::Scissors,
+            Play::Scissors => Play::Rock,
+        },
+    };
 
-    for round in rounds {
-        let (my_play, their_play) = line_to_plays_1(
-            round, 
-            x_val.clone(), 
-            y_val.clone(), 
-            z_val.clone()
-        );
-
-        // Add rps score
-        let rps_score = match my_play {
-            Play::Rock => 1,
-            Play::Paper => 2,
-            Play::Scissors => 3,
-        };
-
-        // Add win/lose score
-        let win_score = match my_play {
-            Play::Rock => {
-                match their_play {
-                    Play::Rock => 3,
-                    Play::Paper => 0,
-                    Play::Scissors => 6
-                }
-            },
-            Play::Paper => {
-                match their_play {
-                    Play::Rock => 6,
-                    Play::Paper => 3,
-                    Play::Scissors => 0,
-                }
-            },
-            Play::Scissors => {
-                match their_play {
-                    Play::Rock => 0,
-                    Play:: Paper => 6,
-                    Play::Scissors => 3,
-                }
-            },
-        };
-
-        score += rps_score + win_score;
-
-        println!("{}: {:?} vs {:?}. Score increase: {} ({}+{})", round, their_play, my_play, rps_score + win_score, rps_score, win_score);
-    }
-
-    score
+    (my_play, their_play)
 }
 
 
 pub fn part_two(input: &str) -> Option<u32> {
     let split: Vec<&str> = input.lines().collect();
-    Some(calculate_score_2(&split, Play::Rock, Play::Paper, Play::Scissors))
+
+    let plays = &split.into_iter().map(|line| line_to_plays_2(line)).collect();
+
+    Some(calculate_score(plays))
 }
 
 fn main() {
