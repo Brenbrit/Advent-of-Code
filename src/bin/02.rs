@@ -33,29 +33,21 @@ What would your total score be if everything goes exactly according to your stra
 pub fn part_one(input: &str) -> Option<u32> {
     let split: Vec<&str> = input.lines().collect();
 
-    let mut scores: Vec<u32> = Vec::new();
-    scores.push(calculate_score(&split, Play::Rock, Play::Paper, Play::Scissors));
-    scores.push(calculate_score(&split, Play::Scissors, Play::Rock, Play::Paper));
-    scores.push(calculate_score(&split, Play::Paper, Play::Scissors, Play::Rock));
-
-    scores.sort();
-    scores.reverse();
-
-    Some(scores[0])
+    Some(calculate_score_1(&split, Play::Rock, Play::Paper, Play::Scissors))
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum Play {
     Rock,
     Paper,
     Scissors
 }
 
-fn calculate_score(rounds: &Vec<&str>, x_val: Play, y_val: Play, z_val: Play) -> u32 {
+fn calculate_score_1(rounds: &Vec<&str>, x_val: Play, y_val: Play, z_val: Play) -> u32 {
     let mut score = 0;
 
     for round in rounds {
-        let (my_play, their_play) = line_to_plays(
+        let (my_play, their_play) = line_to_plays_1(
             round, 
             x_val.clone(), 
             y_val.clone(), 
@@ -63,14 +55,14 @@ fn calculate_score(rounds: &Vec<&str>, x_val: Play, y_val: Play, z_val: Play) ->
         );
 
         // Add rps score
-        score += match my_play {
+        let rps_score = match my_play {
             Play::Rock => 1,
             Play::Paper => 2,
             Play::Scissors => 3,
         };
 
         // Add win/lose score
-        score += match my_play {
+        let win_score = match my_play {
             Play::Rock => {
                 match their_play {
                     Play::Rock => 3,
@@ -93,18 +85,22 @@ fn calculate_score(rounds: &Vec<&str>, x_val: Play, y_val: Play, z_val: Play) ->
                 }
             },
         };
+
+        score += rps_score + win_score;
+
+        println!("{}: {:?} vs {:?}. Score increase: {} ({}+{})", round, their_play, my_play, rps_score + win_score, rps_score, win_score);
     }
 
     score
 }
 
-fn line_to_plays(line: &str, x_val: Play, y_val: Play, z_val: Play) -> (Play, Play) {
-    let my_play = match line.chars().nth(0).unwrap() {
+fn line_to_plays_1(line: &str, x_val: Play, y_val: Play, z_val: Play) -> (Play, Play) {
+    let their_play = match line.chars().nth(0).unwrap() {
         'A' => Play::Rock,
         'B' => Play::Paper,
         _ => Play::Scissors,
     };
-    let their_play = match line.chars().nth(2).unwrap() {
+    let my_play = match line.chars().nth(2).unwrap() {
         'X' => x_val,
         'Y' => y_val,
         _ => z_val,
@@ -113,9 +109,61 @@ fn line_to_plays(line: &str, x_val: Play, y_val: Play, z_val: Play) -> (Play, Pl
     (my_play, their_play)
 }
 
+fn calculate_score_2(rounds: &Vec<&str>, x_val: Play, y_val: Play, z_val: Play) -> u32 {
+    let mut score = 0;
+
+    for round in rounds {
+        let (my_play, their_play) = line_to_plays_1(
+            round, 
+            x_val.clone(), 
+            y_val.clone(), 
+            z_val.clone()
+        );
+
+        // Add rps score
+        let rps_score = match my_play {
+            Play::Rock => 1,
+            Play::Paper => 2,
+            Play::Scissors => 3,
+        };
+
+        // Add win/lose score
+        let win_score = match my_play {
+            Play::Rock => {
+                match their_play {
+                    Play::Rock => 3,
+                    Play::Paper => 0,
+                    Play::Scissors => 6
+                }
+            },
+            Play::Paper => {
+                match their_play {
+                    Play::Rock => 6,
+                    Play::Paper => 3,
+                    Play::Scissors => 0,
+                }
+            },
+            Play::Scissors => {
+                match their_play {
+                    Play::Rock => 0,
+                    Play:: Paper => 6,
+                    Play::Scissors => 3,
+                }
+            },
+        };
+
+        score += rps_score + win_score;
+
+        println!("{}: {:?} vs {:?}. Score increase: {} ({}+{})", round, their_play, my_play, rps_score + win_score, rps_score, win_score);
+    }
+
+    score
+}
+
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let split: Vec<&str> = input.lines().collect();
+    Some(calculate_score_2(&split, Play::Rock, Play::Paper, Play::Scissors))
 }
 
 fn main() {
@@ -137,6 +185,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 2);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(12 as u32));
     }
 }
