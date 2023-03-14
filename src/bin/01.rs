@@ -1,6 +1,3 @@
-use std::thread::current;
-
-
 /* 
 --- Day 1: Calorie Counting ---
 
