@@ -6,8 +6,8 @@ const INSTRUCTION_TO_LOCATION: usize = 5;
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 struct Instruction {
-    from: u32, // as an index, 0-based
-    to: u32, // as an index, 0-based
+    from: usize, // as an index, 0-based
+    to: usize, // as an index, 0-based
     num_crates: u32,
 }
 
@@ -16,9 +16,18 @@ pub fn part_one(input: &str) -> Option<String> {
     let crates = read_crates(&lines).unwrap();
     let instructions = read_instructions(&lines).unwrap();
 
-    dbg!(instructions);
+    let end_state = execute_instructions(&crates, instructions)?;
+    let mut top_crates = String::new();
+    for stack in end_state {
+        match stack.last() {
+            Some(crate_id) => {
+                top_crates.push(*crate_id);
+            },
+            None => (),
+        }
+    }
 
-    None
+    Some(top_crates)
 }
 
 fn get_starting_max_height(lines: &Vec<&str>) -> Option<u32> {
@@ -71,8 +80,8 @@ fn read_instructions(lines: &Vec<&str>) -> Option<Vec<Instruction>> {
         let line_split: Vec<&str> = lines.get(line_num)?.split(' ').collect();
 
         let num_crates = (*line_split.get(INSTRUCTION_NUM_CRATES_LOCATION)?).parse::<u32>().unwrap();
-        let from = (*line_split.get(INSTRUCTION_FROM_LOCATION)?).parse::<u32>().unwrap() - 1;
-        let to = (*line_split.get(INSTRUCTION_TO_LOCATION)?).parse::<u32>().unwrap() - 1;
+        let from = (*line_split.get(INSTRUCTION_FROM_LOCATION)?).parse::<usize>().unwrap() - 1;
+        let to = (*line_split.get(INSTRUCTION_TO_LOCATION)?).parse::<usize>().unwrap() - 1;
 
         let instruction = Instruction{
             num_crates: num_crates,
@@ -86,16 +95,38 @@ fn read_instructions(lines: &Vec<&str>) -> Option<Vec<Instruction>> {
     Some(instructions)
 }
 
-fn execute_instructions(crates: &mut Vec<Vec<char>>, instructions: Vec<Instruction>) -> Option<Vec<Vec<char>>> {
-    for instruction in instructions {
-        dbg!(instruction.from, instruction.to);
-        dbg!(*crates.get(instruction.from as usize)?.pop()?);
-        /*crates.get(instruction.to as usize)?.push(
-            crates.get(instruction.from as usize)?.pop()?
-        ); */
+fn execute_instructions(input_crates: &Vec<Vec<char>>, instructions: Vec<Instruction>) -> Option<Vec<Vec<char>>> {
+
+    // Convert Vec<Vec<char>> to Vec<String> to ignore mutability rules
+    // Very frustrating. I am not sure how to avoid this.
+    let mut crates: Vec<String> = Vec::new();
+    for stack in input_crates.iter() {
+        crates.push(
+            stack.iter().cloned().collect::<String>()
+        );
     }
 
-    None
+    // Move crates!
+    for instruction in instructions {
+        for _ in 0..(instruction.num_crates) {
+
+            // We get the value of the top crate inside a scope
+            // so that we can borrow crates as mutable again.
+            let crate_id: char;
+            {
+                crate_id = crates.get_mut(instruction.from)?.pop()?;
+            }
+            
+            crates.get_mut(instruction.to)?.push(crate_id);
+        }
+    }
+
+    let mut crates_as_chars: Vec<Vec<char>> = Vec::new();
+    for stack in crates {
+        crates_as_chars.push(stack.chars().collect());
+    }
+
+    Some(crates_as_chars)
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
