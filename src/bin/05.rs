@@ -11,12 +11,36 @@ struct Instruction {
     num_crates: u32,
 }
 
+enum CraneEdition {
+    CrateMover9000,
+    CrateMover9001,
+}
+
 pub fn part_one(input: &str) -> Option<String> {
     let lines: Vec<&str> = input.lines().collect();
     let crates = read_crates(&lines).unwrap();
     let instructions = read_instructions(&lines).unwrap();
 
-    let end_state = execute_instructions(&crates, instructions)?;
+    let end_state = execute_instructions(&crates, instructions, &CraneEdition::CrateMover9000)?;
+    let mut top_crates = String::new();
+    for stack in end_state {
+        match stack.last() {
+            Some(crate_id) => {
+                top_crates.push(*crate_id);
+            },
+            None => (),
+        }
+    }
+
+    Some(top_crates)
+}
+
+pub fn part_two(input: &str) -> Option<String> {
+    let lines: Vec<&str> = input.lines().collect();
+    let crates = read_crates(&lines).unwrap();
+    let instructions = read_instructions(&lines).unwrap();
+
+    let end_state = execute_instructions(&crates, instructions, &CraneEdition::CrateMover9001)?;
     let mut top_crates = String::new();
     for stack in end_state {
         match stack.last() {
@@ -95,7 +119,7 @@ fn read_instructions(lines: &Vec<&str>) -> Option<Vec<Instruction>> {
     Some(instructions)
 }
 
-fn execute_instructions(input_crates: &Vec<Vec<char>>, instructions: Vec<Instruction>) -> Option<Vec<Vec<char>>> {
+fn execute_instructions(input_crates: &Vec<Vec<char>>, instructions: Vec<Instruction>, crane_edition: &CraneEdition) -> Option<Vec<Vec<char>>> {
 
     // Convert Vec<Vec<char>> to Vec<String> to ignore mutability rules
     // Very frustrating. I am not sure how to avoid this.
@@ -108,6 +132,7 @@ fn execute_instructions(input_crates: &Vec<Vec<char>>, instructions: Vec<Instruc
 
     // Move crates!
     for instruction in instructions {
+        let mut moved_crates: Vec<char> = Vec::new();
         for _ in 0..(instruction.num_crates) {
 
             // We get the value of the top crate inside a scope
@@ -116,9 +141,19 @@ fn execute_instructions(input_crates: &Vec<Vec<char>>, instructions: Vec<Instruc
             {
                 crate_id = crates.get_mut(instruction.from)?.pop()?;
             }
-            
-            crates.get_mut(instruction.to)?.push(crate_id);
+            moved_crates.push(crate_id);
+            //crates.get_mut(instruction.to)?.push(crate_id);
         }
+
+        crates.get_mut(instruction.to)?.push_str(
+            match crane_edition {
+                CraneEdition::CrateMover9000 => moved_crates,
+                CraneEdition::CrateMover9001 => {
+                    moved_crates.reverse();
+                    moved_crates
+                }
+            }.iter().cloned().collect::<String>().as_str()
+        );
     }
 
     let mut crates_as_chars: Vec<Vec<char>> = Vec::new();
@@ -127,10 +162,6 @@ fn execute_instructions(input_crates: &Vec<Vec<char>>, instructions: Vec<Instruc
     }
 
     Some(crates_as_chars)
-}
-
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
 }
 
 fn main() {
@@ -152,6 +183,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 5);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(String::from("MCD")));
     }
 }
