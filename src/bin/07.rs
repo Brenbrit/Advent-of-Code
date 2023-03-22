@@ -21,7 +21,7 @@ pub fn part_one(input: &str) -> Option<usize> {
     // Write down directories
     let mut directories: Vec<String> = vec![];
     for item in root.keys() {
-        match root.get(item) {
+        match root.get(item).unwrap() {
             Some(_) => {},
             None => {
                 directories.push(item.clone());
@@ -30,11 +30,21 @@ pub fn part_one(input: &str) -> Option<usize> {
     }
 
     // Calculate sizes
-    let root: HashMap<String, usize> = calculate_sizes(root)?;
+    let sizes: HashMap<String, usize> = calculate_sizes(root)?;
 
-    dbg!(&root);
+    let mut sum_of_big_folder_sizes: usize = 0;
 
-    None
+    // Get relevant folders
+    for item in sizes.keys() {
+        if directories.contains(item) 
+        && *sizes.get(item).unwrap() <= (100000 as usize)
+        && item != "" 
+        {
+            sum_of_big_folder_sizes += *sizes.get(item).unwrap();
+        }
+    }
+
+    Some(sum_of_big_folder_sizes)
 }
 
 pub fn part_two(_input: &str) -> Option<usize> {
@@ -114,12 +124,28 @@ fn interpret_commands(commands: Vec<Command>) -> Option<HashMap<String, Option<u
 }
 
 fn calculate_sizes(root: HashMap<String, Option<usize>>) -> Option<HashMap<String, usize>> {
-    let with_sizes: HashMap<String, usize> = HashMap::new();
+    let mut with_sizes: HashMap<String, usize> = HashMap::new();
     let mut keys: Vec<&String> = root.keys().collect();
     keys.sort_by(|a, b| (b.len()).cmp(&a.len()));
-    dbg!(keys);
 
-    None
+    for item in &keys {
+        match root.get(*item).unwrap() {
+            Some(size) => {
+                // item is a file. Insert size directly
+                with_sizes.insert((*item).as_str().to_owned(), *size);
+            },
+            None => {
+                // Calculate size of all children
+                let mut cum_size: usize = 0;
+                for child in get_direct_decendants(&keys, item) {
+                    cum_size += with_sizes.get(&child).unwrap();
+                }
+                with_sizes.insert((*item).as_str().to_owned(), cum_size);
+            },
+        }
+    }
+
+    Some(with_sizes)
 }
 
 fn get_direct_decendants(keys: &Vec<&String>, directory: &str) -> Vec<String> {
@@ -128,7 +154,7 @@ fn get_direct_decendants(keys: &Vec<&String>, directory: &str) -> Vec<String> {
         if item.starts_with(directory) && item.as_str() != directory {
             // item starts with directory
             // make sure we aren't a grandchild
-            if item.matches('/').count() == directory.matches('/').count() - 1 {
+            if item.matches('/').count() == directory.matches('/').count() + 1 {
                 results.push((*item).clone());
             }
         }
