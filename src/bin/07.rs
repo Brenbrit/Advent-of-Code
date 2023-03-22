@@ -18,6 +18,20 @@ pub fn part_one(input: &str) -> Option<usize> {
     let commands = read_commands(input)?;
     let root = interpret_commands(commands)?;
 
+    // Write down directories
+    let mut directories: Vec<String> = vec![];
+    for item in root.keys() {
+        match root.get(item) {
+            Some(_) => {},
+            None => {
+                directories.push(item.clone());
+            },
+        }
+    }
+
+    // Calculate sizes
+    let root: HashMap<String, usize> = calculate_sizes(root)?;
+
     dbg!(&root);
 
     None
@@ -97,6 +111,30 @@ fn interpret_commands(commands: Vec<Command>) -> Option<HashMap<String, Option<u
     }
 
     Some(file_system)
+}
+
+fn calculate_sizes(root: HashMap<String, Option<usize>>) -> Option<HashMap<String, usize>> {
+    let with_sizes: HashMap<String, usize> = HashMap::new();
+    let mut keys: Vec<&String> = root.keys().collect();
+    keys.sort_by(|a, b| (b.len()).cmp(&a.len()));
+    dbg!(keys);
+
+    None
+}
+
+fn get_direct_decendants(keys: &Vec<&String>, directory: &str) -> Vec<String> {
+    let mut results: Vec<String> = vec![];
+    for item in keys {
+        if item.starts_with(directory) && item.as_str() != directory {
+            // item starts with directory
+            // make sure we aren't a grandchild
+            if item.matches('/').count() == directory.matches('/').count() - 1 {
+                results.push((*item).clone());
+            }
+        }
+    }
+
+    results
 }
 
 fn main() {
