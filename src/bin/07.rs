@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 const COMMAND_START: &str = "$ ";
+const TOTAL_DEVICE_SPACE: usize = 70000000;
+const UPDATE_REQUIRED_SPACE: usize = 30000000;
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 enum Command {
@@ -47,8 +49,43 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(sum_of_big_folder_sizes)
 }
 
-pub fn part_two(_input: &str) -> Option<usize> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let commands = read_commands(input)?;
+    let root = interpret_commands(commands)?;
+
+    // Write down directories
+    let mut directories: Vec<String> = vec![];
+    for item in root.keys() {
+        match root.get(item).unwrap() {
+            Some(_) => {},
+            None => {
+                directories.push(item.clone());
+            },
+        }
+    }
+
+    // Calculate sizes
+    let sizes: HashMap<String, usize> = calculate_sizes(root)?;
+
+    // How much do we need to delete?
+    let used_space = *sizes.get("").unwrap();
+    let extra_space_needed = UPDATE_REQUIRED_SPACE - (TOTAL_DEVICE_SPACE - used_space);
+    dbg!(extra_space_needed);
+
+    let mut min_folder_size: usize = *sizes.get("").unwrap();
+
+    // Get relevant folders
+    for item in sizes.keys() {
+        let dir_size = *sizes.get(item).unwrap();
+        if directories.contains(item) 
+        && dir_size >= extra_space_needed
+        && dir_size < min_folder_size 
+        {
+            min_folder_size = dir_size;
+        }
+    }
+
+    Some(min_folder_size)
 }
 
 fn read_commands(input: &str) -> Option<Vec<Command>> {
@@ -182,6 +219,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 7);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(24933642 as usize));
     }
 }
