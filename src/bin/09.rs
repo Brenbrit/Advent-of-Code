@@ -1,4 +1,4 @@
-use std::{collections::HashSet, cmp::{max, min}, ops::Index};
+use std::{collections::HashSet, cmp::{max, min}};
 
 const STARATING_SPACE: [i32; 2] = [0, 0];
 const PT2_NUM_KNOTS: usize = 10;
@@ -30,7 +30,7 @@ fn tail_visited_spots(num_knots: usize, input: &str) -> Option<u32> {
     for _ in 0..num_knots {
         knots.push(STARATING_SPACE);
     }
-    //print_rope(&knots);
+    //_print_rope(&knots);
 
     for head_movement in moves {
         let old_knots = knots.clone();
@@ -49,7 +49,7 @@ fn tail_visited_spots(num_knots: usize, input: &str) -> Option<u32> {
         let tail = knots.last().unwrap();
         tail_visited_spots.insert((tail[0], tail[1]));
 
-        //print_rope(&knots);
+        //_print_rope(&knots);
     }
 
     Some(tail_visited_spots.len() as u32)
@@ -103,7 +103,7 @@ fn follow_knot(leading_knot: &[i32; 2], following_knot: [i32; 2]) -> [i32; 2] {
     to_return
 }
 
-fn print_rope(rope: &Vec<[i32; 2]>) {
+fn _print_rope(rope: &Vec<[i32; 2]>) {
     let mut min_values: [i32; 2] = [i32::MAX, i32::MAX];
     let mut max_values: [i32; 2] = [i32::MIN, i32::MIN];
     for knot_position in rope {
