@@ -1,3 +1,5 @@
+const SCREEN_RESOLUTION: [u32; 2] = [40, 6];
+
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 enum Command {
     Addx(i32),
@@ -6,32 +8,60 @@ enum Command {
 
 pub fn part_one(input: &str) -> Option<i32> {
     let commands = read_commands(input)?;
+    let during_cycle = calc_during_cycles(&commands);
 
-    let mut register_values: Vec<i32> = vec![];
-    let mut register: i32 = 1;
-
-    let mut command_num = 1;
-    for command in commands {
-
-        if (command_num - 20) % 40 == 0 {
-            register_values.push(register * command_num);
-            println!("After cycle {:?}, register has value {:?}", command_num, register * command_num);
-        }
-
-        match command {
-            Command::Addx(val) => { register += val; }
-            _ => {}
-        }
-        command_num += 1;
-
-        command_num += 1;
+    let mut cycle_num = 20;
+    let mut score = 0;
+    while cycle_num < during_cycle.len() {
+        score += during_cycle.get(cycle_num-1).unwrap() * (cycle_num as i32);
+        cycle_num += 40;
     }
 
-    Some(register_values.iter().sum())
+    Some(score)
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<String> {
+    let commands = read_commands(input)?;
+    let during_cycle = calc_during_cycles(&commands);
+
+    let horizontal_resolution = SCREEN_RESOLUTION[0];
+    let vertical_resolution = SCREEN_RESOLUTION[1];
+    let mut output = String::new();
+
+    for line_num in 0..vertical_resolution {
+        for col_num in 0..horizontal_resolution {
+            let cycle_num = (horizontal_resolution * line_num) + col_num;
+            let sprite_pos = during_cycle.get(cycle_num as usize)?;
+            if ((col_num as i32) - sprite_pos).abs() <= 1 {
+                output.push('#');
+            } else {
+                output.push('.');
+            }
+        }
+        output.push('\n');
+    }
+    // remove last newline
+    output.pop();
+
+    Some(output)
+}
+
+fn calc_during_cycles(commands: &Vec<Command>) -> Vec<i32> {
+    let mut during_cycle: Vec<i32> = vec![1];
+
+    for command in commands.iter() {
+        match command {
+            Command::Addx(num) => {
+                during_cycle.push(during_cycle.last().unwrap().clone());
+                during_cycle.push(during_cycle.last().unwrap() + num);
+            },
+            Command::NoOp => {
+                during_cycle.push(during_cycle.last().unwrap().clone());
+            },
+        }
+    }
+
+    during_cycle
 }
 
 fn read_commands(input: &str) -> Option<Vec<Command>> {
@@ -47,7 +77,6 @@ fn read_commands(input: &str) -> Option<Vec<Command>> {
             },
             "addx" => {
                 // Push a noop and then an addx
-                to_return.push(Command::NoOp);
                 to_return.push(Command::Addx(line_split.get(1)?.parse().expect("Failed to interpret addx arg as number")))
             },
             _ => {
@@ -77,7 +106,14 @@ mod tests {
 
     #[test]
     fn test_part_two() {
+        const PART_TWO_ANSWER: &str = "##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######.....";
+
         let input = advent_of_code::read_file("examples", 10);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(String::from(PART_TWO_ANSWER)));
     }
 }
