@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, cmp::{max, min}, ops::Index};
+
+const STARATING_SPACE: [i32; 2] = [0, 0];
+const PT2_NUM_KNOTS: usize = 10;
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 enum Move {
@@ -9,53 +12,125 @@ enum Move {
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
+    tail_visited_spots(2, input)
+}
+
+pub fn part_two(input: &str) -> Option<u32> {
+    tail_visited_spots(PT2_NUM_KNOTS, input)
+}
+
+fn tail_visited_spots(num_knots: usize, input: &str) -> Option<u32> {
     // read moves
     let moves = read_moves(input)?;
     
     // empty list of visited spots
-    let mut visited_spots: HashSet<(i32, i32)> = HashSet::new();
+    let mut tail_visited_spots: HashSet<(i32, i32)> = HashSet::new();
 
-    // Positions of the two parts of the snake
-    // Both start at (0, 0)
-    let mut head: [i32; 2] = [0; 2];
-    let mut tail: [i32; 2] = [0; 2];
-
-    // Add start position to the set
-    visited_spots.insert((tail[0], tail[1]));
+    let mut knots: Vec<[i32; 2]> = vec![];
+    for _ in 0..num_knots {
+        knots.push(STARATING_SPACE);
+    }
+    //print_rope(&knots);
 
     for head_movement in moves {
-        head = movement_after(head, &head_movement);
+        let old_knots = knots.clone();
+        knots.clear();
+
+        let head = movement_after(*old_knots.first()?, &head_movement);
+        knots.push(head);
         // head is now in position
 
-        // is tail within 1 spot of head?
-        if (head[0] - tail[0]).abs() <= 1 && (head[1] - tail[1]).abs() <= 1 {
-            // we don't need to move
-            continue;
+        for following_knot_index in 1..num_knots {
+            let leader = knots.last()?;
+            let follower = old_knots.get(following_knot_index)?;
+            knots.push(follow_knot(leader, *follower));
         }
 
-        // we need to move, but in which direction?
-        // follow the head directly!
-        tail = movement_after(tail, &head_movement);
+        let tail = knots.last().unwrap();
+        tail_visited_spots.insert((tail[0], tail[1]));
 
-        // Do we need to move again?
-        if (head[0] - tail[0]).abs() + (head[1] - tail[1]).abs() > 1 {
-            if head_movement == Move::Up || head_movement == Move::Down {
-                // we need to move horizontally
-                tail[0] = head[0];
+        //print_rope(&knots);
+    }
+
+    Some(tail_visited_spots.len() as u32)
+}
+
+fn follow_knot(leading_knot: &[i32; 2], following_knot: [i32; 2]) -> [i32; 2] {
+    // is tail within 1 spot of head?
+    if (leading_knot[0] - following_knot[0]).abs() <= 1 
+    && (leading_knot[1] - following_knot[1]).abs() <= 1 {
+        // we don't need to move
+        return following_knot;
+    }
+
+    let mut to_return = following_knot.clone();
+
+    // we need to move, but in which direction?
+    if (leading_knot[0] - following_knot[0]).abs() > 1 {
+        // we must move in the x direction
+        // move diagonally if necessary
+        if leading_knot[1] != following_knot[1] {
+            if leading_knot[1] > to_return[1] {
+                to_return[1] += 1;
             } else {
-                // we need to move vertically
-                tail[1] = head[1];
+                to_return[1] -= 1;
+            }   
+        }
+
+        if leading_knot[0] > to_return[0] {
+            to_return[0] += 1;
+        } else {
+            to_return[0] -= 1;
+        }
+    } else {
+        // we must move in the y direction
+        // move diagonally if necessary
+        if leading_knot[0] != following_knot[0] {
+            if leading_knot[0] > to_return[0] {
+                to_return[0] += 1;
+            } else {
+                to_return[0] -= 1;
             }
         }
 
-        visited_spots.insert((tail[0], tail[1]));
+        if leading_knot[1] > to_return[1] {
+            to_return[1] += 1;
+        } else {
+            to_return[1] -= 1;
+        }    
     }
 
-    Some(visited_spots.len() as u32)
+    to_return
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+fn print_rope(rope: &Vec<[i32; 2]>) {
+    let mut min_values: [i32; 2] = [i32::MAX, i32::MAX];
+    let mut max_values: [i32; 2] = [i32::MIN, i32::MIN];
+    for knot_position in rope {
+        max_values[0] = max(max_values[0], knot_position[0]);
+        max_values[1] = max(max_values[1], knot_position[1]);
+        min_values[0] = min(min_values[0], knot_position[0]);
+        min_values[1] = min(min_values[1], knot_position[1]);
+    }
+
+    for row in (min_values[0]..=max_values[0]).rev() {
+        for col in (min_values[1]..=max_values[1]).rev() {
+            if row == 0 && col == 0 {
+                print!("+");
+            } else if rope.contains(&[row, col]) {
+                let index = rope.iter().position(|&r| r == [row, col]).unwrap();
+                if index == 0 {
+                    print!("H")
+                } else {
+                    print!("{}", index)
+                }
+            } else {
+                print!(".");
+            }
+        }
+        println!();
+    }
+    println!();
 }
 
 fn movement_after(starting_position: [i32; 2], input_move: &Move) -> [i32; 2] {
