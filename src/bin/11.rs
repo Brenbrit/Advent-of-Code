@@ -17,12 +17,30 @@ struct Monkey {
 }
 
 impl Monkey {
-    fn pop_item(&mut self) -> Option<u32> {
-        self.items.borrow_mut().pop()
+    fn next_item(&mut self) -> Option<u32> {
+        let item = self.items.borrow().get(0)?.clone();
+        self.items.borrow_mut().remove(0);
+        Some(item)
     }
 
-    fn push(&mut self, item: u32) {
+    fn push_item(&mut self, item: u32) {
         self.items.borrow_mut().push(item)
+    }
+
+    fn compute_new(&self, old: i32) -> i32 {
+        let first_term = match self.operation.left_hand_side {
+            OperationTerm::Constant(c) => c,
+            OperationTerm::Old => old,
+        };
+        let second_term = match self.operation.right_hand_side {
+            OperationTerm::Constant(c) => c,
+            OperationTerm::Old => old,
+        };
+        
+        match self.operation.operation {
+            Operation::Plus => first_term + second_term,
+            Operation::Times => first_term * second_term,
+        }
     }
 }
 
