@@ -16,6 +16,16 @@ struct Monkey {
     test: Test,
 }
 
+impl Monkey {
+    fn pop_item(&mut self) -> Option<u32> {
+        self.items.borrow_mut().pop()
+    }
+
+    fn push(&mut self, item: u32) {
+        self.items.borrow_mut().push(item)
+    }
+}
+
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 struct Expression {
     left_hand_side: OperationTerm,
