@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 /*
 Example:
 Monkey 0:
@@ -9,7 +11,7 @@ Monkey 0:
  */
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 struct Monkey {
-    starting_items: Vec<u32>,
+    items: RefCell<Vec<u32>>,
     operation: Expression,
     test: Test,
 }
@@ -42,6 +44,7 @@ struct Test {
 
 pub fn part_one(input: &str) -> Option<u32> {
     let monkeys = read_monkeys(input)?;
+    dbg!(monkeys);
 
     None
 }
@@ -55,7 +58,22 @@ fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
     let split: Vec<&str> = input.lines().collect();
     let monkey_groups = split.chunks(7);
 
+    let mut monkeys: Vec<Monkey> = vec![];
+
     for monkey_group in monkey_groups {
+
+        let starting_items: Vec<&str> = monkey_group
+            .get(1)?
+            .split("Starting items:")
+            .collect();
+        let starting_items: Vec<u32> = starting_items
+            .last()?
+            .trim()
+            .split(", ")
+            .into_iter()
+            .map(|x| x.parse::<u32>().expect("Failed to interpret starting item"))
+            .collect();
+
         let operation_expr = monkey_group
             .get(2)?
             .split("Operation: new = ")
@@ -85,11 +103,47 @@ fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
                 )
             },
         };
+
+        let divisible_by: Vec<&str> = (*monkey_group.get(3)?)
+            .split(" ")
+            .collect();
+        let divisible_by = divisible_by
+            .last()?
+            .parse::<u32>()
+            .expect("Failed to interpret test -> divisible by");
+
+        let true_throw: Vec<&str> = (*monkey_group.get(4)?)
+            .split(" ")
+            .collect();
+        let true_throw = true_throw
+            .last()?
+            .parse::<usize>()
+            .expect("Failed to interpret test -> true throw");
+
+        let false_throw: Vec<&str> = (*monkey_group.get(5)?)
+            .split(" ")
+            .collect();
+        let false_throw = false_throw
+            .last()?
+            .parse::<usize>()
+            .expect("Failed to interpret test -> false throw");
+
+        let monkey_test = Test{
+            divisible_by: divisible_by,
+            r#true: true_throw,
+            r#false: false_throw,
+        };
+
+        let monkey = Monkey{
+            items: RefCell::new(starting_items),
+            operation: monkey_operation,
+            test: monkey_test,
+        };
         
-        dbg!(monkey_group);
+        monkeys.push(monkey);
     }
 
-    None
+    Some(monkeys)
 }
 
 fn main() {
