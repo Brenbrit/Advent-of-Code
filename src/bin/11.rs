@@ -17,7 +17,7 @@ struct Monkey {
 }
 
 impl Monkey {
-    fn next_item(&mut self) -> Option<u32> {
+    fn pop_next_item(&mut self) -> Option<u32> {
         let item = self.items.borrow().get(0)?.clone();
         self.items.borrow_mut().remove(0);
         Some(item)
@@ -72,13 +72,24 @@ struct Test {
 
 pub fn part_one(input: &str) -> Option<u32> {
     let monkeys = read_monkeys(input)?;
-    dbg!(monkeys);
+    let inspection_counts = count_inspects(monkeys, 20);
+    dbg!(inspection_counts);
 
     None
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
     None
+}
+
+fn count_inspects(monkeys: Vec<Monkey>, rounds: usize) -> Vec<u32> {
+    let mut inspection_counts: Vec<u32> = vec![0; monkeys.len()];
+
+    for _ in 0..rounds {
+        
+    }
+
+    inspection_counts
 }
 
 fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
