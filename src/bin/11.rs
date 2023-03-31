@@ -11,23 +11,27 @@ Monkey 0:
  */
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 struct Monkey {
-    items: RefCell<Vec<u32>>,
+    items: RefCell<Vec<u64>>,
     operation: Expression,
     test: Test,
 }
 
 impl Monkey {
-    fn pop_next_item(&mut self) -> Option<u32> {
+    fn pop_next_item(&mut self) -> Option<u64> {
         let item = self.items.borrow().get(0)?.clone();
         self.items.borrow_mut().remove(0);
         Some(item)
     }
 
-    fn push_item(&mut self, item: u32) {
+    fn peek_next_item(&self) -> Option<u64> {
+        Some(self.items.borrow().get(0)?.clone())
+    }
+
+    fn push_item(&mut self, item: u64) {
         self.items.borrow_mut().push(item)
     }
 
-    fn compute_new(&self, old: i32) -> i32 {
+    fn compute_new(&self, old: u64) -> u64 {
         let first_term = match self.operation.left_hand_side {
             OperationTerm::Constant(c) => c,
             OperationTerm::Old => old,
@@ -42,6 +46,18 @@ impl Monkey {
             Operation::Times => first_term * second_term,
         }
     }
+
+    fn test_item(&self, item_worry_level: u64) -> bool {
+        item_worry_level % self.test.divisible_by == 0
+    }
+
+    fn item_destination(&self, item_worry_level: u64) -> usize {
+        if self.test_item(item_worry_level) {
+            self.test.r#true
+        } else {
+            self.test.r#false
+        }
+    }
 }
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
@@ -53,7 +69,7 @@ struct Expression {
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 enum OperationTerm {
-    Constant(i32),
+    Constant(u64),
     Old,
 }
 
@@ -65,28 +81,59 @@ enum Operation {
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 struct Test {
-    divisible_by: u32,
+    divisible_by: u64,
     r#true: usize,
     r#false: usize,
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
+pub fn part_one(input: &str) -> Option<u64> {
+    // Read monkeys
     let monkeys = read_monkeys(input)?;
-    let inspection_counts = count_inspects(monkeys, 20);
-    dbg!(inspection_counts);
+    // Perform throws and count inspections
+    let mut inspection_counts = count_inspects(monkeys, 20);
+    // Sort inspections
+    inspection_counts.sort();
 
-    None
+    Some(inspection_counts.pop()? * inspection_counts.pop()?)
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
     None
 }
 
-fn count_inspects(monkeys: Vec<Monkey>, rounds: usize) -> Vec<u32> {
-    let mut inspection_counts: Vec<u32> = vec![0; monkeys.len()];
+fn count_inspects(mut monkeys: Vec<Monkey>, rounds: usize) -> Vec<u64> {
+    let mut inspection_counts: Vec<u64> = vec![0; monkeys.len()];
 
+    // For each round,
     for _ in 0..rounds {
-        
+        // For each monkey (in order),
+        for current_monkey_index in 0..monkeys.len() {
+            // For each item in the monkey's hands,
+            loop {
+                match monkeys.get(current_monkey_index).unwrap().peek_next_item() {
+                    Some(item_worry_level) => {
+                        let mut item_worry_level = monkeys
+                            .get(current_monkey_index)
+                            .unwrap()
+                            .compute_new(item_worry_level);
+                        item_worry_level /= 3;
+                        let item_destination = monkeys
+                            .get(current_monkey_index)
+                            .unwrap()
+                            .item_destination(item_worry_level);
+                        // Remove item from first monkey's posession
+                        {
+                            monkeys.get_mut(current_monkey_index).unwrap().pop_next_item();
+                            inspection_counts[current_monkey_index] += 1;
+                        }
+                        {
+                            monkeys.get_mut(item_destination).unwrap().push_item(item_worry_level);
+                        }
+                    },
+                    None => { break },
+                }
+            }
+        }
     }
 
     inspection_counts
@@ -105,12 +152,12 @@ fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
             .get(1)?
             .split("Starting items:")
             .collect();
-        let starting_items: Vec<u32> = starting_items
+        let starting_items: Vec<u64> = starting_items
             .last()?
             .trim()
             .split(", ")
             .into_iter()
-            .map(|x| x.parse::<u32>().expect("Failed to interpret starting item"))
+            .map(|x| x.parse::<u64>().expect("Failed to interpret starting item"))
             .collect();
 
         let operation_expr = monkey_group
@@ -122,7 +169,7 @@ fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
             left_hand_side: match *operation_parts.get(0)? {
                 "old" => OperationTerm::Old,
                 constant => OperationTerm::Constant(
-                    constant.parse::<i32>()
+                    constant.parse::<u64>()
                         .expect("Failed to interpret constant")
                 )
             },
@@ -137,7 +184,7 @@ fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
             right_hand_side: match *operation_parts.get(2)? {
                 "old" => OperationTerm::Old,
                 constant => OperationTerm::Constant(
-                    constant.parse::<i32>()
+                    constant.parse::<u64>()
                         .expect("Failed to interpret constant")
                 )
             },
@@ -148,7 +195,7 @@ fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
             .collect();
         let divisible_by = divisible_by
             .last()?
-            .parse::<u32>()
+            .parse::<u64>()
             .expect("Failed to interpret test -> divisible by");
 
         let true_throw: Vec<&str> = (*monkey_group.get(4)?)
@@ -198,7 +245,7 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 11);
-        assert_eq!(part_one(&input), Some(10605 as u32));
+        assert_eq!(part_one(&input), Some(10605 as u64));
     }
 
     #[test]
