@@ -88,20 +88,27 @@ struct Test {
 
 pub fn part_one(input: &str) -> Option<u64> {
     // Read monkeys
-    let monkeys = read_monkeys(input)?;
+    let (monkeys, lcm) = read_monkeys(input)?;
     // Perform throws and count inspections
-    let mut inspection_counts = count_inspects(monkeys, 20);
+    let mut inspection_counts = count_inspects(monkeys, 20, 3, lcm);
     // Sort inspections
     inspection_counts.sort();
 
     Some(inspection_counts.pop()? * inspection_counts.pop()?)
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u64> {
+    // Read monkeys
+    let (monkeys, lcm) = read_monkeys(input)?;
+    // Perform throws and count inspections
+    let mut inspection_counts = count_inspects(monkeys, 10000, 1, lcm);
+    // Sort inspections
+    inspection_counts.sort();
+
+    Some(inspection_counts.pop()? * inspection_counts.pop()?)
 }
 
-fn count_inspects(mut monkeys: Vec<Monkey>, rounds: usize) -> Vec<u64> {
+fn count_inspects(mut monkeys: Vec<Monkey>, rounds: usize, round_divisor: u64, lcm: u64) -> Vec<u64> {
     let mut inspection_counts: Vec<u64> = vec![0; monkeys.len()];
 
     // For each round,
@@ -116,7 +123,8 @@ fn count_inspects(mut monkeys: Vec<Monkey>, rounds: usize) -> Vec<u64> {
                             .get(current_monkey_index)
                             .unwrap()
                             .compute_new(item_worry_level);
-                        item_worry_level /= 3;
+                        item_worry_level /= round_divisor;
+                        item_worry_level %= lcm;
                         let item_destination = monkeys
                             .get(current_monkey_index)
                             .unwrap()
@@ -139,7 +147,8 @@ fn count_inspects(mut monkeys: Vec<Monkey>, rounds: usize) -> Vec<u64> {
     inspection_counts
 }
 
-fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
+fn read_monkeys(input: &str) -> Option<(Vec<Monkey>, u64)> {
+    let mut lcm = 1u64;
 
     let split: Vec<&str> = input.lines().collect();
     let monkey_groups = split.chunks(7);
@@ -197,6 +206,7 @@ fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
             .last()?
             .parse::<u64>()
             .expect("Failed to interpret test -> divisible by");
+        lcm = find_lcm(lcm, divisible_by);
 
         let true_throw: Vec<&str> = (*monkey_group.get(4)?)
             .split(" ")
@@ -229,7 +239,27 @@ fn read_monkeys(input: &str) -> Option<Vec<Monkey>> {
         monkeys.push(monkey);
     }
 
-    Some(monkeys)
+    Some((monkeys, lcm))
+}
+
+// LCM and GCD via https://rustp.org/number-theory/lcm/
+fn find_gcd(mut a:u64, mut b:u64) -> u64{
+    if a==b { return a; }
+    if b > a {
+        let temp = a;
+        a = b;
+        b = temp;
+    }
+    while b>0 {
+        let temp = a;
+        a = b;
+        b = temp%b;
+    }
+    return a;
+}
+
+fn find_lcm(a:u64, b:u64) -> u64{
+    return a*(b/find_gcd(a,b));
 }
 
 fn main() {
@@ -251,6 +281,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 11);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(2713310158 as u64));
     }
 }
