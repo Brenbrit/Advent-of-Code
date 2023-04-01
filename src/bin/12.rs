@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 const MAX_STEP_UP: i32 = 1;
 
@@ -45,9 +45,7 @@ impl Graph {
 
 pub fn part_one(input: &str) -> Option<u32> {
     let (topology, starting, ending) = read_input(input)?;
-    dbg!(&topology, &starting, &ending);
     let graph = generate_graph(topology)?;
-    dbg!(&graph);
     let (_, path_size) = dijkstra_shortest_path(graph, starting, ending)?;
 
     Some(path_size)
@@ -57,9 +55,59 @@ pub fn part_two(_input: &str) -> Option<u32> {
     None
 }
 
-fn dijkstra_shortest_path(graph: Graph, starting: (usize, usize), ending: (usize, usize)) -> Option<(Graph, u32)> {
+fn dijkstra_shortest_path(mut graph: Graph, starting: (usize, usize), ending: (usize, usize)) -> Option<(Graph, u32)> {
 
-    // TODO: implement Dijkstra's algo
+    let mut tentative_distances: HashMap<(usize, usize), u32> = HashMap::new();
+    let mut unvisited_nodes: HashSet<(usize, usize)> = HashSet::new();
+
+    // mark all nodes to unvisited and set initial values to infinity
+    for node in graph.visited_nodes.keys() {
+        let node = node.clone();
+        unvisited_nodes.insert(node);
+        tentative_distances.insert(node, u32::MAX);
+    }
+
+    // Set distance from source to source = 0
+    tentative_distances.insert(starting, 0);
+
+    while ! unvisited_nodes.is_empty() {
+        // Find unvisited node closest to starting
+        let mut closest_node: (usize, usize) = (0, 0);
+        let mut closest_node_distance = u32::MAX;
+        for unvisited_node in &unvisited_nodes {
+            if *tentative_distances.get(unvisited_node).unwrap() < closest_node_distance {
+                closest_node = unvisited_node.clone();
+                closest_node_distance = *tentative_distances.get(unvisited_node).unwrap();
+            }
+        }
+
+        // If there are no reachable nodes, exit.
+        if closest_node_distance == u32::MAX {
+            break
+        }
+
+        // remove closest_node from unvisited nodes
+        unvisited_nodes.remove(&closest_node);
+
+        // for each neighbor of closest_node still in unvisited_nodes,
+        for possible_neighbor in &unvisited_nodes {
+            let possible_neighbor = possible_neighbor.clone();
+            // If the graph has a path from closest_node to unvisited_neighbor,
+            if let Some(neighbor_dist) = graph.get(closest_node, possible_neighbor) {
+                // Calculate alternative distance from source to possible_neighbor
+                let alternate_distance = tentative_distances.get(&closest_node).unwrap() + neighbor_dist;
+                // Update tentative_distances if necessary
+                if alternate_distance < *tentative_distances.get(&possible_neighbor).unwrap() {
+                    tentative_distances.insert(possible_neighbor, alternate_distance);
+                }
+            }
+        }
+    }
+
+    // Update graph
+    for destination_node in tentative_distances.keys() {
+        graph.set(starting, *destination_node, *tentative_distances.get(destination_node).unwrap());
+    }
 
     let shortest_path_cost = graph.get(starting, ending)?;
     Some((graph, shortest_path_cost))
@@ -81,41 +129,45 @@ fn generate_graph(topology: Vec<Vec<i32>>) -> Option<Graph> {
                 .unwrap();
 
             if row > 0 
-            && tile_elevation - topology
+            && topology
                 .get(row-1)
                 .unwrap()
                 .get(column)
                 .unwrap()
+                - tile_elevation
                 <= MAX_STEP_UP {
                 graph.set((row, column), (row-1, column), 1);
             }
 
             if row < rows - 1
-            && tile_elevation - topology
+            && topology
                 .get(row+1)
                 .unwrap()
                 .get(column)
                 .unwrap() 
+                - tile_elevation
                 <= MAX_STEP_UP {
                 graph.set((row, column), (row+1, column), 1);
             }
 
             if column > 0
-            && tile_elevation - topology
+            && topology
                 .get(row)
                 .unwrap()
                 .get(column-1)
                 .unwrap() 
+                - tile_elevation
                 <= MAX_STEP_UP {
                 graph.set((row, column), (row, column-1), 1);
             }
 
             if column < columns - 1
-            && tile_elevation - topology
+            && topology
                 .get(row)
                 .unwrap()
                 .get(column+1)
                 .unwrap() 
+                - tile_elevation
                 <= MAX_STEP_UP {
                 graph.set((row, column), (row, column+1), 1);
             }
