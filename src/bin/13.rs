@@ -71,11 +71,27 @@ enum ListElement {
     List(List),
 }
 
+#[derive(Debug)]
+enum ListOrder {
+    LeftFirst,
+    RightFirst,
+    Equal,
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
     let pairs = read_input(input)?;
-    dbg!(&pairs);
+    
+    let mut result = 0;
+    for i in 0..pairs.len() {
+        let pair = pairs.get(i).unwrap();
+        let list_order = compare_lists(&pair[0], &pair[1]);
+        match list_order {
+            ListOrder::LeftFirst => { result += (i+1) as u32 },
+            _ => {},
+        }
+    }
 
-    None
+    Some(result)
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
@@ -100,6 +116,50 @@ fn read_input(input: &str) -> Option<Vec<[List; 2]>> {
     Some(lists)
 }
 
+fn compare_lists(left: &List, right: &List) -> ListOrder {
+
+    for i in 0..std::cmp::max(left.elements.len(), right.elements.len()) {
+        let left_element = left.elements.get(i);
+        let right_element = right.elements.get(i);
+
+        let (left_element, right_element) = match (left_element, right_element) {
+            (None, Some(_)) => { return ListOrder::LeftFirst },
+            (Some(_), None) => { return ListOrder::RightFirst },
+            (Some(left), Some(right)) => (left, right),
+            _ => { panic!(); }, // This should not be possible
+        };
+    
+        let list_order = match (left_element, right_element) {
+            (ListElement::Number(left_number), ListElement::Number(right_number)) => {
+                if left_number < right_number {
+                    ListOrder::LeftFirst
+                } else if left_number > right_number {
+                    ListOrder::RightFirst
+                } else {
+                    ListOrder::Equal
+                }
+            },
+            (ListElement::Number(left_num), ListElement::List(right_list)) => {
+                let left_list = List { elements: vec![ListElement::Number(*left_num)] };
+                compare_lists(&left_list, right_list)
+            },
+            (ListElement::List(left_list), ListElement::Number(right_num)) => {
+                let right_list = List { elements: vec![ListElement::Number(*right_num)] };
+                compare_lists(left_list, &right_list)
+            },
+            (ListElement::List(left_list), ListElement::List(right_list)) => {
+                compare_lists(left_list, right_list)
+            },
+        };
+        match list_order {
+            ListOrder::Equal => {},
+            other_order => { return other_order },
+        }
+    }
+
+    ListOrder::Equal
+}
+
 fn main() {
     let input = &advent_of_code::read_file("inputs", 13);
     advent_of_code::solve!(1, part_one, input);
@@ -119,6 +179,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 13);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(140 as u32));
     }
 }
