@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use std::cmp::Ordering;
+
+#[derive(Clone, Debug)]
 struct List {
     elements: Vec<ListElement>,
 }
@@ -39,6 +41,56 @@ impl From<&str> for List {
     }
 }
 
+impl std::fmt::Display for List {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut result = String::new();
+
+        for element in self.elements.iter() {
+            match element {
+                ListElement::List(list) => {
+                    result.push_str(&format!("{},", list));
+                },
+                ListElement::Number(number) => {
+                    result.push_str(&format!("{},", number));
+                }
+            }
+        }
+
+        write!(f, "[{}]", result)
+    }
+}
+
+impl Ord for List {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match compare_lists(self, other) {
+            ListOrder::LeftFirst => Ordering::Less,
+            ListOrder::RightFirst => Ordering::Greater,
+            ListOrder::Equal => Ordering::Equal,
+        }
+    }
+}
+
+impl PartialOrd for List {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match compare_lists(self, other) {
+            ListOrder::LeftFirst => Some(Ordering::Less),
+            ListOrder::RightFirst => Some(Ordering::Greater),
+            ListOrder::Equal => Some(Ordering::Equal),
+        }
+    }
+}
+
+impl PartialEq for List {
+    fn eq(&self, other: &Self) -> bool {
+        match compare_lists(self, other) {
+            ListOrder::Equal => true,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for List {}
+
 impl List {
     // Assumes that the first char is the leading [ of the list.
     fn list_len(chars: &[char]) -> Option<usize> {
@@ -65,7 +117,7 @@ impl List {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum ListElement {
     Number(u32),
     List(List),
@@ -79,7 +131,7 @@ enum ListOrder {
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let pairs = read_input(input)?;
+    let pairs = read_input_part_1(input)?;
     
     let mut result = 0;
     for i in 0..pairs.len() {
@@ -94,11 +146,38 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(result)
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u32> {
+    let mut lists = read_input_part_2(input)?;
+
+    // Add divider packets
+    let first_divider = List { 
+        elements: vec![ListElement::List(
+            List { elements: vec![ListElement::Number(2)] }
+        )]
+    };
+    let second_divider = List { 
+        elements: vec![ListElement::List(
+            List { elements: vec![ListElement::Number(6)] }
+        )]
+    };
+
+    lists.push(first_divider.clone());
+    lists.push(second_divider.clone());
+    lists.sort();
+
+    let first_divider_index = lists
+        .iter()
+        .position(|l| &first_divider == l)
+        .unwrap() + 1;
+    let second_divider_index = lists
+        .iter()
+        .position(|l| &second_divider == l)
+        .unwrap() + 1;
+
+    Some((first_divider_index * second_divider_index) as u32)
 }
 
-fn read_input(input: &str) -> Option<Vec<[List; 2]>> {
+fn read_input_part_1(input: &str) -> Option<Vec<[List; 2]>> {
     let lines = input.lines().collect::<Vec<&str>>();
     let mut lists: Vec<[List; 2]> = vec![];
 
@@ -111,6 +190,20 @@ fn read_input(input: &str) -> Option<Vec<[List; 2]>> {
         let first_list = List::from(line_group[0]);
         let second_list = List::from(line_group[1]);
         lists.push([first_list, second_list]);
+    }
+
+    Some(lists)
+}
+
+fn read_input_part_2(input: &str) -> Option<Vec<List>> {
+    let lines = input.lines().collect::<Vec<&str>>();
+    let mut lists: Vec<List> = vec![];
+
+    for line in lines {
+        if line == "" {
+            continue;
+        }
+        lists.push(List::from(line));
     }
 
     Some(lists)
