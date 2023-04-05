@@ -5,21 +5,17 @@ struct List {
 
 impl From<&str> for List {
     fn from(string: &str) -> Self {
-        println!("Interpreting as list: '{}'", string);
         let chars = string.chars().collect::<Vec<char>>();
         let last_char_index = List::list_len(&chars).unwrap();
-        println!("This list is from index {} to {}.", 0, last_char_index);
 
         let mut elements: Vec<ListElement> = vec![];
         let mut current_index: usize = 1;
         while current_index < last_char_index {
-            println!("Current char: {}", *chars.get(current_index).unwrap());
             match *chars.get(current_index).unwrap() {
                 '[' => {
                     // we have a nested list
                     let nested_list_last_char = List::list_len(&chars[current_index..])
-                        .unwrap();
-                    println!("Nested list runs from {} to {}", current_index, nested_list_last_char);
+                        .unwrap() + current_index + 1;
                     let nested_list = List::from(&string[current_index..nested_list_last_char]);
                     elements.push(ListElement::List(nested_list));
                     current_index = nested_list_last_char;
@@ -33,13 +29,13 @@ impl From<&str> for List {
                         .chars()
                         .position(|c| c == ',' || c == ']')
                         .unwrap();
-                    println!("Interpreting as number: '{}'", &rest_of_string[..end_of_num_index]);
+                    elements.push(ListElement::Number(rest_of_string[..end_of_num_index].parse::<u32>().unwrap()));
                     current_index += end_of_num_index;
                 }
             }
         }
 
-        List { elements: vec![] }
+        List { elements: elements }
     }
 }
 
@@ -47,8 +43,8 @@ impl List {
     // Assumes that the first char is the leading [ of the list.
     fn list_len(chars: &[char]) -> Option<usize> {
         let mut last_char_index: usize = 0;
-        let mut num_nested_lists: u32 = 1;
-        for i in 1..chars.len() {
+        let mut num_nested_lists: u32 = 0;
+        for i in 0..chars.len() {
             match chars.get(i).unwrap() {
                 '[' => { num_nested_lists += 1 },
                 ']' => {
@@ -77,7 +73,7 @@ enum ListElement {
 
 pub fn part_one(input: &str) -> Option<u32> {
     let pairs = read_input(input)?;
-    //dbg!(&pairs);
+    dbg!(&pairs);
 
     None
 }
