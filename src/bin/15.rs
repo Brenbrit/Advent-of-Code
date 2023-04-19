@@ -11,8 +11,11 @@ struct BeaconSensor {
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let sensors = read_input(input)?;
+    println!("Reading sensors");
+    let sensors = read_input(input)?;    
+    println!("Determining coverage");
     let coverage = determine_coverage(sensors);
+    println!("Solving problem");
     let covered_cols = get_row_coverage(&coverage, ROW);
 
     // Debugging!
@@ -22,6 +25,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     }
     covered_cols_vec.sort();
     println!("{:?}", covered_cols_vec);
+    println!("len: {}", covered_cols_vec.len());
 
     Some(covered_cols.len() as u32)
 }
@@ -43,13 +47,18 @@ fn get_row_coverage(coverage: &HashSet<(i32, i32)>, row: i32) -> HashSet<i32> {
 
 fn determine_coverage(beacon_sensors: Vec<BeaconSensor>) -> HashSet<(i32, i32)> {
     let mut coverage_areas: HashSet<(i32, i32)> = HashSet::new();
+    let mut current_beacon = 1;
 
-    for beacon_sensor in beacon_sensors {
+    for beacon_sensor in &beacon_sensors {
+        println!("  ==> {}/{}", current_beacon, beacon_sensors.len());
+        current_beacon += 1;
+
         let sensor_loc = beacon_sensor.sensor_pos;
         let beacon_loc = beacon_sensor.nearest_beacon;
+
         let manhattan_distance = (sensor_loc[0] - beacon_loc[0]).abs()
             + (sensor_loc[1] - beacon_loc[1]).abs();
-        for manhattan_distance in 1..manhattan_distance {
+        for manhattan_distance in 1..(manhattan_distance + 1) {
             // northernmost covered spot
             let mut covered_spot = [sensor_loc[0], sensor_loc[1] + manhattan_distance];
 
@@ -81,6 +90,11 @@ fn determine_coverage(beacon_sensors: Vec<BeaconSensor>) -> HashSet<(i32, i32)> 
                 covered_spot[1] += 1;
             }
         }
+    }
+
+    // The covered areas do not include previously-discovered beacons.
+    for beacon_sensor in &beacon_sensors {
+        coverage_areas.remove(&(beacon_sensor.nearest_beacon[0], beacon_sensor.nearest_beacon[0]));
     }
 
     coverage_areas
