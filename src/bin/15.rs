@@ -1,8 +1,6 @@
 use std::collections::HashSet;
 
-// For debugging and testing: 10
-// For solving: 2000000
-const ROW: i32 = 10;
+const SOLVE_ROW: i32 = 2000000;
 
 #[derive(Debug, Clone)]
 struct BeaconSensor {
@@ -10,39 +8,56 @@ struct BeaconSensor {
     nearest_beacon: [i32; 2],
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
+fn part_one_solve(input: &str) -> Option<u32> {
+    part_one(input, SOLVE_ROW)
+}
+
+pub fn part_one(input: &str, row: i32) -> Option<u32> {
     println!("Reading sensors");
     let sensors = read_input(input)?;    
     println!("Determining coverage");
-    let coverage = determine_coverage(sensors);
+    let coverage = determine_one_row_coverage(sensors, row);
     println!("Solving problem");
-    let covered_cols = get_row_coverage(&coverage, ROW);
 
-    // Debugging!
-    let mut covered_cols_vec = vec![];
-    for col in &covered_cols {
-        covered_cols_vec.push(*col);
-    }
-    covered_cols_vec.sort();
-    println!("{:?}", covered_cols_vec);
-    println!("len: {}", covered_cols_vec.len());
-
-    Some(covered_cols.len() as u32)
+    Some(coverage.len() as u32)
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
     None
 }
 
-fn get_row_coverage(coverage: &HashSet<(i32, i32)>, row: i32) -> HashSet<i32> {
-    let mut covered_columns: HashSet<i32> = HashSet::new();
-    for (x, y) in coverage {
-        if *y == row {
-            covered_columns.insert(*x);
+fn determine_one_row_coverage(beacon_sensors: Vec<BeaconSensor>, row: i32) -> HashSet<i32> {
+    let mut coverage_cols: HashSet<i32> = HashSet::new();
+    let mut current_beacon = 1;
+
+    for beacon_sensor in &beacon_sensors {
+        println!("  ==> {}/{}", current_beacon, beacon_sensors.len());
+        current_beacon += 1;
+
+        let sensor_loc = beacon_sensor.sensor_pos;
+        let beacon_loc = beacon_sensor.nearest_beacon;
+
+        let manhattan_distance = (sensor_loc[0] - beacon_loc[0]).abs()
+            + (sensor_loc[1] - beacon_loc[1]).abs();
+        
+        let vertical_distance_from_row = (sensor_loc[1] - row).abs();
+
+        // We are too far from the row - no coverage.
+        if vertical_distance_from_row > manhattan_distance {
+            continue
+        }
+
+        let distance_after_reaching_row = manhattan_distance - vertical_distance_from_row;
+
+        //dbg!(&sensor_loc, &manhattan_distance, &vertical_distance_from_row, &distance_after_reaching_row);
+
+        // We will always reach at least one cell if we get here.
+        for col in (sensor_loc[0] - distance_after_reaching_row)..(sensor_loc[0] + distance_after_reaching_row) {
+            coverage_cols.insert(col);
         }
     }
 
-    covered_columns
+    coverage_cols
 }
 
 fn determine_coverage(beacon_sensors: Vec<BeaconSensor>) -> HashSet<(i32, i32)> {
@@ -94,10 +109,21 @@ fn determine_coverage(beacon_sensors: Vec<BeaconSensor>) -> HashSet<(i32, i32)> 
 
     // The covered areas do not include previously-discovered beacons.
     for beacon_sensor in &beacon_sensors {
-        coverage_areas.remove(&(beacon_sensor.nearest_beacon[0], beacon_sensor.nearest_beacon[0]));
+        coverage_areas.remove(&(beacon_sensor.nearest_beacon[0], beacon_sensor.nearest_beacon[1]));
     }
 
     coverage_areas
+}
+
+fn get_row_coverage(coverage: &HashSet<(i32, i32)>, row: i32) -> HashSet<i32> {
+    let mut covered_columns: HashSet<i32> = HashSet::new();
+    for (x, y) in coverage {
+        if *y == row {
+            covered_columns.insert(*x);
+        }
+    }
+
+    covered_columns
 }
 
 fn read_input(input: &str) -> Option<Vec<BeaconSensor>> {
@@ -141,7 +167,7 @@ fn read_input(input: &str) -> Option<Vec<BeaconSensor>> {
 
 fn main() {
     let input = &advent_of_code::read_file("inputs", 15);
-    advent_of_code::solve!(1, part_one, input);
+    advent_of_code::solve!(1, part_one_solve, input);
     advent_of_code::solve!(2, part_two, input);
 }
 
@@ -149,10 +175,12 @@ fn main() {
 mod tests {
     use super::*;
 
+    const TEST_ROW: i32 = 10;
+
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 15);
-        assert_eq!(part_one(&input), Some(26u32));
+        assert_eq!(part_one(&input, TEST_ROW), Some(26u32));
     }
 
     #[test]
