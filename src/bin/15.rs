@@ -17,31 +17,38 @@ pub fn part_one(input: &str, row: i32) -> Option<u32> {
     let sensors = read_input(input)?;
     let coverage = determine_one_row_coverage(&sensors, row);
 
-    Some(coverage.len() as u32)
+    let mut total_coverage: u32 = 0;
+    for area in coverage {
+        total_coverage += (area[1] - area[0]) as u32;
+    }
+
+    Some(total_coverage as u32)
 }
 
-fn part_two_solve(input: &str) -> Option<u32> {
+fn part_two_solve(input: &str) -> Option<u64> {
     part_two(input, SOLVE_UPPPER_BOUNDS)
 }
 
-pub fn part_two(input: &str, upper_bounds: i32) -> Option<u32> {
+pub fn part_two(input: &str, upper_bounds: i32) -> Option<u64> {
     let sensors = read_input(input)?;
-    for beacon_sensor in &sensors {
-        //dbg!(beacon_sensor.sensor_pos);
-        let row = beacon_sensor.sensor_pos[1];
+    for row in 0..upper_bounds {
         let coverage = determine_one_row_coverage(&sensors, row);
-        for i in 0..(upper_bounds+1) {
-            if ! coverage.contains(&i) {
-                println!("Possible coordinate found: ({}, {}). Solution: {}", i, row, ((4000000*i)+row));
-            }
+        let coverage = limit_coverage(coverage, 0, upper_bounds);
+        
+        if coverage.len() != 1 {
+            let x = (coverage.get(0).unwrap()[1] + 1) as u64;
+            let y = row as u64;
+            return Some((4000000 * x) + y);
         }
     }
     
     None
 }
 
-fn determine_one_row_coverage(beacon_sensors: &Vec<BeaconSensor>, row: i32) -> HashSet<i32> {
-    let mut coverage_cols: HashSet<i32> = HashSet::new();
+// Returns a Vec<[i32; 2]> where each element is the minimun and maximum
+// covered tile.
+fn determine_one_row_coverage(beacon_sensors: &Vec<BeaconSensor>, row: i32) -> Vec<[i32; 2]> {
+    let mut coverage_sets: Vec<[i32; 2]> = vec![];
     //let mut current_beacon = 1;
 
     for beacon_sensor in beacon_sensors {
@@ -63,13 +70,94 @@ fn determine_one_row_coverage(beacon_sensors: &Vec<BeaconSensor>, row: i32) -> H
 
         let distance_after_reaching_row = manhattan_distance - vertical_distance_from_row;
 
-        // We will always reach at least one cell if we get here.
-        for col in (sensor_loc[0] - distance_after_reaching_row)..(sensor_loc[0] + distance_after_reaching_row) {
-            coverage_cols.insert(col);
+        let lower_bound = sensor_loc[0] - distance_after_reaching_row;
+        let upper_bound = sensor_loc[0] + distance_after_reaching_row;
+
+        coverage_sets.push([lower_bound, upper_bound]);
+    }
+
+    consolidate_coverage(coverage_sets)
+}
+
+fn consolidate_coverage(coverage_raw: Vec<[i32; 2]>) -> Vec<[i32; 2]> {
+    let mut consolidated: Vec<[i32; 2]> = vec![];
+
+    'sensor: for sensor_coverage in coverage_raw {
+
+        for previous_consolidated in &consolidated {
+            // Is this sensor completely inside another?
+            if sensor_coverage[0] >= previous_consolidated[0]
+            && sensor_coverage[1] <= previous_consolidated[1] {
+                continue 'sensor;
+            }
+
+            // Is another sensor completely inside this one?
+            if sensor_coverage[0] <= previous_consolidated[0]
+            && sensor_coverage[1] >= previous_consolidated[1] {
+                // Remove old sensor
+                consolidated.remove(consolidated.iter().position(|&r| r == *previous_consolidated).unwrap());
+                // Add new sensor
+                consolidated.push(sensor_coverage);
+                // Sort vec
+                consolidated.sort();
+                continue 'sensor;
+            }
+        }
+
+        consolidated.push(sensor_coverage);
+        // Sort list
+        consolidated.sort();
+    }
+
+    // Actually consolidate each item in consolidated
+    let mut i: usize = 0;
+    while i < (consolidated.len() - 1) {
+        let current_area = consolidated.get(i).unwrap();
+        let next_area = consolidated.get(i+1).unwrap();
+
+        if current_area[1] >= next_area[0] {
+            let new_area = [current_area[0], std::cmp::max(current_area[1], next_area[1])];
+            consolidated.remove(i);
+            consolidated.remove(i);
+            consolidated.insert(i, new_area);
+        } else if current_area[1] + 1 == next_area[0] {
+            let new_area = [current_area[0], next_area[1]];
+            consolidated.remove(i);
+            consolidated.remove(i);
+            consolidated.insert(i, new_area);
+        } else {
+            i += 1;
         }
     }
 
-    coverage_cols
+    consolidated
+}
+
+// Limits coverage to a minimum of min and a maximum of max
+// Also removes any coverage areas which are completely outside of that limit
+fn limit_coverage(coverage: Vec<[i32; 2]>, min: i32, max: i32) -> Vec<[i32; 2]> {
+    let mut limited: Vec<[i32; 2]> = vec![];
+
+    for area in coverage {
+
+        // Does this engulf the entire limit?
+        if area[0] <= min && area[1] >= max {
+            return vec![[min, max]];
+        }
+
+        // Does the upper bound fall within the limit?
+        if area[1] >= min && area[1] <= max {
+            limited.push([std::cmp::max(area[0], min), area[1]]);
+            continue;
+        }
+        // Does the lower bound fall within the limit?
+        if area[0] >= min && area[0] <= max {
+            limited.push([area[0], std::cmp::min(area[1], max)]);
+            continue;
+        }
+    }
+
+    limited
 }
 
 fn read_input(input: &str) -> Option<Vec<BeaconSensor>> {
@@ -133,6 +221,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 15);
-        assert_eq!(part_two(&input, TEST_UPPER_BOUND), Some(56000011u32));
+        assert_eq!(part_two(&input, TEST_UPPER_BOUND), Some(56000011u64));
     }
 }
