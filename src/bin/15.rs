@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 const SOLVE_ROW: i32 = 2000000;
+const SOLVE_UPPPER_BOUNDS: i32 = 4000000;
 
 #[derive(Debug, Clone)]
 struct BeaconSensor {
@@ -13,26 +14,39 @@ fn part_one_solve(input: &str) -> Option<u32> {
 }
 
 pub fn part_one(input: &str, row: i32) -> Option<u32> {
-    println!("Reading sensors");
-    let sensors = read_input(input)?;    
-    println!("Determining coverage");
-    let coverage = determine_one_row_coverage(sensors, row);
-    println!("Solving problem");
+    let sensors = read_input(input)?;
+    let coverage = determine_one_row_coverage(&sensors, row);
 
     Some(coverage.len() as u32)
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
+fn part_two_solve(input: &str) -> Option<u32> {
+    part_two(input, SOLVE_UPPPER_BOUNDS)
+}
+
+pub fn part_two(input: &str, upper_bounds: i32) -> Option<u32> {
+    let sensors = read_input(input)?;
+    for beacon_sensor in &sensors {
+        //dbg!(beacon_sensor.sensor_pos);
+        let row = beacon_sensor.sensor_pos[1];
+        let coverage = determine_one_row_coverage(&sensors, row);
+        for i in 0..(upper_bounds+1) {
+            if ! coverage.contains(&i) {
+                println!("Possible coordinate found: ({}, {}). Solution: {}", i, row, ((4000000*i)+row));
+            }
+        }
+    }
+    
     None
 }
 
-fn determine_one_row_coverage(beacon_sensors: Vec<BeaconSensor>, row: i32) -> HashSet<i32> {
+fn determine_one_row_coverage(beacon_sensors: &Vec<BeaconSensor>, row: i32) -> HashSet<i32> {
     let mut coverage_cols: HashSet<i32> = HashSet::new();
-    let mut current_beacon = 1;
+    //let mut current_beacon = 1;
 
-    for beacon_sensor in &beacon_sensors {
-        println!("  ==> {}/{}", current_beacon, beacon_sensors.len());
-        current_beacon += 1;
+    for beacon_sensor in beacon_sensors {
+        //println!("  ==> {}/{}", current_beacon, beacon_sensors.len());
+        //current_beacon += 1;
 
         let sensor_loc = beacon_sensor.sensor_pos;
         let beacon_loc = beacon_sensor.nearest_beacon;
@@ -49,8 +63,6 @@ fn determine_one_row_coverage(beacon_sensors: Vec<BeaconSensor>, row: i32) -> Ha
 
         let distance_after_reaching_row = manhattan_distance - vertical_distance_from_row;
 
-        //dbg!(&sensor_loc, &manhattan_distance, &vertical_distance_from_row, &distance_after_reaching_row);
-
         // We will always reach at least one cell if we get here.
         for col in (sensor_loc[0] - distance_after_reaching_row)..(sensor_loc[0] + distance_after_reaching_row) {
             coverage_cols.insert(col);
@@ -58,72 +70,6 @@ fn determine_one_row_coverage(beacon_sensors: Vec<BeaconSensor>, row: i32) -> Ha
     }
 
     coverage_cols
-}
-
-fn determine_coverage(beacon_sensors: Vec<BeaconSensor>) -> HashSet<(i32, i32)> {
-    let mut coverage_areas: HashSet<(i32, i32)> = HashSet::new();
-    let mut current_beacon = 1;
-
-    for beacon_sensor in &beacon_sensors {
-        println!("  ==> {}/{}", current_beacon, beacon_sensors.len());
-        current_beacon += 1;
-
-        let sensor_loc = beacon_sensor.sensor_pos;
-        let beacon_loc = beacon_sensor.nearest_beacon;
-
-        let manhattan_distance = (sensor_loc[0] - beacon_loc[0]).abs()
-            + (sensor_loc[1] - beacon_loc[1]).abs();
-        for manhattan_distance in 1..(manhattan_distance + 1) {
-            // northernmost covered spot
-            let mut covered_spot = [sensor_loc[0], sensor_loc[1] + manhattan_distance];
-
-            // move southeast
-            while covered_spot != [sensor_loc[0] + manhattan_distance, sensor_loc[1]] {
-                coverage_areas.insert((covered_spot[0], covered_spot[1]));
-                covered_spot[0] += 1;
-                covered_spot[1] -= 1;
-            }
-
-            // move southwest
-            while covered_spot != [sensor_loc[0], sensor_loc[1] - manhattan_distance] {
-                coverage_areas.insert((covered_spot[0], covered_spot[1]));
-                covered_spot[0] -= 1;
-                covered_spot[1] -= 1;
-            }
-
-            // move northwest
-            while covered_spot != [sensor_loc[0] - manhattan_distance, sensor_loc[1]] {
-                coverage_areas.insert((covered_spot[0], covered_spot[1]));
-                covered_spot[0] -= 1;
-                covered_spot[1] += 1;
-            }
-
-            // move northeast
-            while covered_spot != [sensor_loc[0], sensor_loc[1] + manhattan_distance] {
-                coverage_areas.insert((covered_spot[0], covered_spot[1]));
-                covered_spot[0] += 1;
-                covered_spot[1] += 1;
-            }
-        }
-    }
-
-    // The covered areas do not include previously-discovered beacons.
-    for beacon_sensor in &beacon_sensors {
-        coverage_areas.remove(&(beacon_sensor.nearest_beacon[0], beacon_sensor.nearest_beacon[1]));
-    }
-
-    coverage_areas
-}
-
-fn get_row_coverage(coverage: &HashSet<(i32, i32)>, row: i32) -> HashSet<i32> {
-    let mut covered_columns: HashSet<i32> = HashSet::new();
-    for (x, y) in coverage {
-        if *y == row {
-            covered_columns.insert(*x);
-        }
-    }
-
-    covered_columns
 }
 
 fn read_input(input: &str) -> Option<Vec<BeaconSensor>> {
@@ -168,7 +114,7 @@ fn read_input(input: &str) -> Option<Vec<BeaconSensor>> {
 fn main() {
     let input = &advent_of_code::read_file("inputs", 15);
     advent_of_code::solve!(1, part_one_solve, input);
-    advent_of_code::solve!(2, part_two, input);
+    advent_of_code::solve!(2, part_two_solve, input);
 }
 
 #[cfg(test)]
@@ -176,6 +122,7 @@ mod tests {
     use super::*;
 
     const TEST_ROW: i32 = 10;
+    const TEST_UPPER_BOUND: i32 = 20;
 
     #[test]
     fn test_part_one() {
@@ -186,6 +133,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 15);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input, TEST_UPPER_BOUND), Some(56000011u32));
     }
 }
