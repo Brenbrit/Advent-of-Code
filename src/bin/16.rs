@@ -1,9 +1,40 @@
-pub fn part_one(_input: &str) -> Option<u32> {
+use std::collections::HashMap;
+
+pub fn part_one(input: &str) -> Option<u32> {
+    read_input(input);
     None
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
     None
+}
+
+fn read_input(input: &str) -> Option<HashMap<String, (u32, Vec<String>)>> {
+    let lines = input.lines().collect::<Vec<&str>>();
+    let mut pipes: HashMap<String, (u32, Vec<String>)> = HashMap::new();
+
+    for line in lines {
+        let line_split: Vec<&str> = line.split(" ").collect();
+        let pipe_name = String::from(*line_split.get(1)?);
+        dbg!(pipe_name);
+
+        let rate_word = *line_split.get(4)?;
+        let rate: Vec<&str> = rate_word.split("=").collect();
+        let rate = *rate.get(1)?;
+        let rate: Vec<&str> = rate.split(";").collect();
+        let rate = rate
+            .get(0)?
+            .parse::<u32>()
+            .unwrap();
+        dbg!(rate);
+
+        let mut other_valves: Vec<String> = vec![];
+        for other_valve in line_split.iter().skip(9) {
+            dbg!(other_valve);
+        }
+    }
+
+    Some(pipes)
 }
 
 fn main() {
