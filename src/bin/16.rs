@@ -3,13 +3,13 @@ use std::collections::HashMap;
 #[derive(Clone, Debug)]
 struct Valve {
     rate: u32,
-    connected_valves: Vec<String>,
+    connected_valves: Vec<(String, u32)>,
     open: bool,
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let valves = read_input(input)?;
-    dbg!(valves);
+    let valves = remove_zeros(read_input(input)?);
+    //dbg!(valves);
     None
 }
 
@@ -34,10 +34,10 @@ fn read_input(input: &str) -> Option<HashMap<String, Valve>> {
             .parse::<u32>()
             .unwrap();
 
-        let mut other_valves: Vec<String> = vec![];
+        let mut other_valves: Vec<(String, u32)> = vec![];
         for other_valve in line_split.iter().skip(9) {
             let other_valve = String::from(&other_valve[..2]);
-            other_valves.push(other_valve);
+            other_valves.push((other_valve, 1));
         }
 
         pipes.insert(
@@ -51,6 +51,24 @@ fn read_input(input: &str) -> Option<HashMap<String, Valve>> {
     }
 
     Some(pipes)
+}
+
+fn remove_zeros(valves: HashMap<String, Valve>) -> HashMap<String, Valve> {
+
+    let mut zero_valves: Vec<&str> = vec![];
+    for valve in valves.keys() {
+        if valves.get(valve).unwrap().rate == 0 {
+            println!("Zero valve: {}", valve);
+            for other_valve in valves.keys() {
+                dbg!(&valves.get(valve).unwrap().connected_valves);
+                if valves.get(valve).unwrap().connected_valves.contains(&(valve.to_string(), 1)) {
+                    println!("Connected: {}", other_valve);
+                }
+            }
+        }
+    }
+
+    valves
 }
 
 fn main() {
