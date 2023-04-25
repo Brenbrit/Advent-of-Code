@@ -1,7 +1,15 @@
 use std::collections::HashMap;
 
+#[derive(Clone, Debug)]
+struct Valve {
+    rate: u32,
+    connected_valves: Vec<String>,
+    open: bool,
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
-    read_input(input);
+    let valves = read_input(input)?;
+    dbg!(valves);
     None
 }
 
@@ -9,14 +17,13 @@ pub fn part_two(_input: &str) -> Option<u32> {
     None
 }
 
-fn read_input(input: &str) -> Option<HashMap<String, (u32, Vec<String>)>> {
+fn read_input(input: &str) -> Option<HashMap<String, Valve>> {
     let lines = input.lines().collect::<Vec<&str>>();
-    let mut pipes: HashMap<String, (u32, Vec<String>)> = HashMap::new();
+    let mut pipes: HashMap<String, Valve> = HashMap::new();
 
     for line in lines {
         let line_split: Vec<&str> = line.split(" ").collect();
         let pipe_name = String::from(*line_split.get(1)?);
-        dbg!(pipe_name);
 
         let rate_word = *line_split.get(4)?;
         let rate: Vec<&str> = rate_word.split("=").collect();
@@ -26,12 +33,21 @@ fn read_input(input: &str) -> Option<HashMap<String, (u32, Vec<String>)>> {
             .get(0)?
             .parse::<u32>()
             .unwrap();
-        dbg!(rate);
 
         let mut other_valves: Vec<String> = vec![];
         for other_valve in line_split.iter().skip(9) {
-            dbg!(other_valve);
+            let other_valve = String::from(&other_valve[..2]);
+            other_valves.push(other_valve);
         }
+
+        pipes.insert(
+            pipe_name,
+            Valve {
+                rate: rate,
+                connected_valves: other_valves,
+                open: false,
+            }
+        );
     }
 
     Some(pipes)
