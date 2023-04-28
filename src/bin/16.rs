@@ -1,15 +1,15 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
 struct Valve {
     rate: u32,
-    connected_valves: Vec<(String, u32)>,
+    connected_valves: HashMap<String, u32>,
     open: bool,
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let valves = remove_zeros(read_input(input)?);
-    //dbg!(valves);
+    let valves = remove_zeros(read_input(input)?, 10);
+    dbg!(valves);
     None
 }
 
@@ -34,10 +34,10 @@ fn read_input(input: &str) -> Option<HashMap<String, Valve>> {
             .parse::<u32>()
             .unwrap();
 
-        let mut other_valves: Vec<(String, u32)> = vec![];
+        let mut other_valves: HashMap<String, u32> = HashMap::new();
         for other_valve in line_split.iter().skip(9) {
             let other_valve = String::from(&other_valve[..2]);
-            other_valves.push((other_valve, 1));
+            other_valves.insert(other_valve, 1);
         }
 
         pipes.insert(
@@ -53,22 +53,47 @@ fn read_input(input: &str) -> Option<HashMap<String, Valve>> {
     Some(pipes)
 }
 
-fn remove_zeros(valves: HashMap<String, Valve>) -> HashMap<String, Valve> {
+fn remove_zeros(mut valves: HashMap<String, Valve>) -> HashMap<String, Valve> {
 
-    let mut zero_valves: Vec<&str> = vec![];
+    // A vec of all the valves which have zero flow rate
+    // Only includes valves which lead to other valves
+    let zero_valves = find_zero_valves(&valves);
+
+    let mut source_nodes: Vec<&String> = valves.keys().collect();
+    for (index, source_node) in (&source_nodes).iter().enumerate() {
+        if zero_valves.contains(source_node) && **source_node != "AA".to_string() {
+            source_nodes.remove(index);
+        }
+    }
+
+    valves
+}
+
+fn find_zero_valves(valves: &HashMap<String, Valve>) -> Vec<String> {
+    // A HashSet of all the valves which have zero flow rate
+    // Only includes valves which lead to other valves
+    let mut zero_valves: HashSet<String> = HashSet::new();
     for valve in valves.keys() {
         if valves.get(valve).unwrap().rate == 0 {
-            println!("Zero valve: {}", valve);
             for other_valve in valves.keys() {
-                dbg!(&valves.get(valve).unwrap().connected_valves);
-                if valves.get(valve).unwrap().connected_valves.contains(&(valve.to_string(), 1)) {
-                    println!("Connected: {}", other_valve);
+                //dbg!(&valves.get(valve).unwrap().connected_valves);
+                for (connected_valve, _) in &valves.get(other_valve).unwrap().connected_valves {
+                    if *connected_valve == *valve {
+                        // other_valve leads to valve, which has a 0 flow rate
+                        zero_valves.insert(valve.clone());
+                    }
                 }
             }
         }
     }
 
-    valves
+    let mut zero_valves_vec: Vec<String> = vec![];
+
+    for valve in zero_valves {
+        zero_valves_vec.push(valve);
+    }
+
+    zero_valves_vec
 }
 
 fn main() {
