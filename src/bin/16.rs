@@ -1,20 +1,63 @@
+const TOTAL_TIME: u32 = 30;
+
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
 struct Valve {
     rate: u32,
     connected_valves: HashMap<String, u32>,
-    open: bool,
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
     let valves = remove_zeros(read_input(input)?);
-    dbg!(valves);
+
+    let mut current_valve = &"AA".to_string();
+    let mut open_valves: Vec<String> = vec![];
+    let mut current_time: u32 = 0;
+    let mut current_flow_rate: u32 = 0;
+    let mut total_flow: u32 = 0;
+
+    loop {
+        let possible_moves = get_possible_moves(current_valve, &valves, &open_valves, TOTAL_TIME - current_time);
+        if possible_moves.len() == 0 {
+            break;
+        }
+        
+        let mut best_choice_name: &String = &"".to_string();
+        let mut best_choice_return: u32 = 0;
+        for (move_name, move_return) in possible_moves {
+            if move_return > 
+        } 
+
+        break;
+    }
+
     None
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
     None
+}
+
+fn get_possible_moves(current_valve: &String, valves: &HashMap<String, Valve>, open_valves: &Vec<String>, time_left: u32) -> Vec<(String, u32)> {
+    let mut possible_moves: Vec<(String, u32)> = vec![];
+    let connected_valves = &valves.get(current_valve).unwrap().connected_valves;
+
+    for (destination, destination_cost) in connected_valves {
+
+        // We've already visited this node. Not a valid move.
+        if open_valves.contains(&destination) {
+            continue;
+        }
+
+        // Calculate how much flow this valve will grant us once we move there and open it
+        let destination_rate = valves.get(destination).unwrap().rate;
+        let total_return = (time_left - *destination_cost - 1) * destination_rate;
+
+        possible_moves.push((destination.clone(), total_return));
+    }
+
+    possible_moves
 }
 
 fn read_input(input: &str) -> Option<HashMap<String, Valve>> {
@@ -45,7 +88,6 @@ fn read_input(input: &str) -> Option<HashMap<String, Valve>> {
             Valve {
                 rate: rate,
                 connected_valves: other_valves,
-                open: false,
             }
         );
     }
@@ -78,13 +120,29 @@ fn remove_zeros(mut valves: HashMap<String, Valve>) -> HashMap<String, Valve> {
         valves.insert(source_node, Valve {
             rate: source_node_backup.rate,
             connected_valves: distances_to_other_nodes,
-            open: source_node_backup.open
+        });
+    }
+
+    {
+        let source_node = "AA".to_string();
+
+        // We are only changing the distances, so make a copy of the backup valve.
+        let source_node_backup = valves_backup.get(&source_node).unwrap();
+        let distances_to_other_nodes = single_valve_dijkstra(&source_node, &valves, &zero_valves);
+
+        dbg!(&distances_to_other_nodes);
+
+        valves.insert(source_node, Valve {
+            rate: source_node_backup.rate,
+            connected_valves: distances_to_other_nodes,
         });
     }
 
     // Remove zero valves completely
     for zero_valve in &zero_valves {
-        valves.remove(zero_valve);
+        if zero_valve != "AA" {
+            valves.remove(zero_valve);
+        }
     }
 
     valves
