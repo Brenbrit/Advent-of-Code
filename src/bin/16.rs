@@ -1,5 +1,6 @@
 const TOTAL_TIME: u32 = 30;
 
+use core::time;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -11,28 +12,35 @@ struct Valve {
 pub fn part_one(input: &str) -> Option<u32> {
     let valves = remove_zeros(read_input(input)?);
 
-    let mut current_valve = &"AA".to_string();
+    let mut current_valve = "AA".to_string();
     let mut open_valves: Vec<String> = vec![];
     let mut current_time: u32 = 0;
-    let mut current_flow_rate: u32 = 0;
     let mut total_flow: u32 = 0;
 
     loop {
-        let possible_moves = get_possible_moves(current_valve, &valves, &open_valves, TOTAL_TIME - current_time);
+        let possible_moves = get_possible_moves(&current_valve, &valves, &open_valves, TOTAL_TIME - current_time);
         if possible_moves.len() == 0 {
             break;
         }
+        dbg!(&possible_moves);
         
         let mut best_choice_name: &String = &"".to_string();
         let mut best_choice_return: u32 = 0;
-        for (move_name, move_return) in possible_moves {
-            if move_return > 
-        } 
+        for (move_name, move_return) in &possible_moves {
+            if *move_return > best_choice_return {
+                best_choice_name = &move_name;
+                best_choice_return = *move_return;
+            }
+        }
 
-        break;
+        println!("Moving from {} to {}.", current_valve, &best_choice_name);
+        current_time += valves.get(&current_valve).unwrap().connected_valves.get(best_choice_name).unwrap() + 1;
+        current_valve = best_choice_name.clone();
+        total_flow += best_choice_return;
+        open_valves.push(current_valve.clone());
     }
 
-    None
+    Some(total_flow)
 }
 
 pub fn part_two(_input: &str) -> Option<u32> {
@@ -47,6 +55,11 @@ fn get_possible_moves(current_valve: &String, valves: &HashMap<String, Valve>, o
 
         // We've already visited this node. Not a valid move.
         if open_valves.contains(&destination) {
+            continue;
+        }
+
+        // This choice would take too long.
+        if (time_left - *destination_cost - 1) >= time_left {
             continue;
         }
 
@@ -129,8 +142,6 @@ fn remove_zeros(mut valves: HashMap<String, Valve>) -> HashMap<String, Valve> {
         // We are only changing the distances, so make a copy of the backup valve.
         let source_node_backup = valves_backup.get(&source_node).unwrap();
         let distances_to_other_nodes = single_valve_dijkstra(&source_node, &valves, &zero_valves);
-
-        dbg!(&distances_to_other_nodes);
 
         valves.insert(source_node, Valve {
             rate: source_node_backup.rate,
