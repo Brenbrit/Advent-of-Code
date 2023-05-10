@@ -1,4 +1,5 @@
 const TOTAL_TIME: u32 = 30;
+const ELEPHANT_INSTRUCTION_TIME: u32 = 4;
 
 use std::collections::{HashMap, HashSet};
 
@@ -11,62 +12,111 @@ struct Valve {
 pub fn part_one(input: &str) -> Option<u32> {
     let valves = remove_zeros(read_input(input)?);
 
-    let mut current_valve = "AA".to_string();
-    let mut open_valves: Vec<String> = vec![];
-    let mut current_time: u32 = 0;
-    let mut total_flow: u32 = 0;
+    Some(find_max_flow(&valves, &"AA".to_string(), &vec![], TOTAL_TIME))
+}
 
-    loop {
-        let possible_moves = get_possible_moves(&current_valve, &valves, &open_valves, TOTAL_TIME - current_time);
-        if possible_moves.is_empty() {
-            break;
-        }
-        dbg!(&possible_moves);
-        
-        let mut best_choice_name: &String = &"".to_string();
-        let mut best_choice_return: u32 = 0;
-        for (move_name, move_return) in &possible_moves {
-            if *move_return > best_choice_return {
-                best_choice_name = move_name;
-                best_choice_return = *move_return;
-            }
-        }
+pub fn part_two(input: &str) -> Option<u32> {
+    let valves = remove_zeros(read_input(input)?);
+    let initial_position = &"AA".to_string();
+    let initial_time_left = TOTAL_TIME - ELEPHANT_INSTRUCTION_TIME;
 
-        println!("Moving from {} to {}.", current_valve, &best_choice_name);
-        current_time += valves.get(&current_valve).unwrap().connected_valves.get(best_choice_name).unwrap() + 1;
-        current_valve = best_choice_name.clone();
-        total_flow += best_choice_return;
-        open_valves.push(current_valve.clone());
+    Some(find_max_flow_with_elephant(
+        &valves, 
+        initial_position, 
+        initial_position, &vec![], 
+        initial_time_left, 
+        initial_time_left
+    ))
+}
+
+fn find_max_flow_with_elephant(valves: &HashMap<String, Valve>, my_current_valve: &String, elephant_current_valve: &String, open_valves: &Vec<String>, my_time_left: u32, elephant_time_left: u32) -> u32 {
+    let possible_moves = get_possible_moves(&my_current_valve, &valves, &open_valves, my_time_left);
+    if possible_moves.is_empty() {
+        return 0;
     }
 
-    Some(total_flow)
+    let mut best_move_return = 0_u32;
+
+    for (possible_move, possible_move_return, possible_move_cost) in possible_moves {
+        // Recursively try all sub-moves
+
+        // First, calculate the data needed for the recursive call
+        let current_valve = &possible_move;
+        let mut open_valves = open_valves.clone();
+        open_valves.push(current_valve.clone());
+        let time_left_after_move = my_time_left - possible_move_cost;
+
+        // Recursive call
+        let return_after_move = find_max_flow(valves, current_valve, &open_valves, time_left_after_move);
+        
+        // Update return value if necessary
+        let total_return = possible_move_return + return_after_move;
+        if total_return > best_move_return {
+            best_move_return = total_return;
+        }
+    }
+    
+    best_move_return
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+fn find_max_flow(valves: &HashMap<String, Valve>, current_valve: &String, open_valves: &Vec<String>, time_left: u32) -> u32 {
+    let possible_moves = get_possible_moves(&current_valve, &valves, &open_valves, time_left);
+    if possible_moves.is_empty() {
+        return 0;
+    }
+
+    let mut best_move_return = 0_u32;
+
+    for (possible_move, possible_move_return, possible_move_cost) in possible_moves {
+        // Recursively try all sub-moves
+
+        // First, calculate the data needed for the recursive call
+        let current_valve = &possible_move;
+        let mut open_valves = open_valves.clone();
+        open_valves.push(current_valve.clone());
+        let time_left_after_move = time_left - possible_move_cost;
+
+        // Recursive call
+        let return_after_move = find_max_flow(valves, current_valve, &open_valves, time_left_after_move);
+        
+        // Update return value if necessary
+        let total_return = possible_move_return + return_after_move;
+        if total_return > best_move_return {
+            best_move_return = total_return;
+        }
+    }
+    
+    best_move_return
 }
 
-fn get_possible_moves(current_valve: &String, valves: &HashMap<String, Valve>, open_valves: &Vec<String>, time_left: u32) -> Vec<(String, u32)> {
-    let mut possible_moves: Vec<(String, u32)> = vec![];
+fn get_possible_moves(current_valve: &String, valves: &HashMap<String, Valve>, open_valves: &Vec<String>, time_left: u32) -> Vec<(String, u32, u32)> {
+    let mut possible_moves: Vec<(String, u32, u32)> = vec![];
     let connected_valves = &valves.get(current_valve).unwrap().connected_valves;
 
     for (destination, destination_cost) in connected_valves {
+        let destination_cost = *destination_cost;
 
         // We've already visited this node. Not a valid move.
         if open_valves.contains(destination) {
             continue;
         }
 
-        // This choice would take too long.
-        if (time_left - *destination_cost - 1) >= time_left {
+        // How much time would we have left after this option?
+        // Used for calculating total return of this move.
+        let mut time_left_after_use = 0_i32;
+        time_left_after_use += time_left as i32;
+        time_left_after_use -= destination_cost as i32 + 1;
+        if time_left_after_use < 1 {
             continue;
         }
 
+        let time_left_after_use = time_left_after_use as u32;
+
         // Calculate how much flow this valve will grant us once we move there and open it
         let destination_rate = valves.get(destination).unwrap().rate;
-        let total_return = (time_left - *destination_cost - 1) * destination_rate;
+        let total_return = time_left_after_use * destination_rate;
 
-        possible_moves.push((destination.clone(), total_return));
+        possible_moves.push((destination.clone(), total_return, destination_cost + 1));
     }
 
     possible_moves
@@ -223,7 +273,6 @@ fn find_zero_valves(valves: &HashMap<String, Valve>) -> Vec<String> {
     for valve in valves.keys() {
         if valves.get(valve).unwrap().rate == 0 {
             for other_valve in valves.keys() {
-                //dbg!(&valves.get(valve).unwrap().connected_valves);
                 for (connected_valve, _) in &valves.get(other_valve).unwrap().connected_valves {
                     if *connected_valve == *valve {
                         // other_valve leads to valve, which has a 0 flow rate
@@ -256,12 +305,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 16);
-        assert_eq!(part_one(&input), Some(1651u32));
+        assert_eq!(part_one(&input), Some(1651_u32));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 16);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(1707_u32));
     }
 }
