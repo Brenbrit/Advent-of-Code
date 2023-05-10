@@ -30,29 +30,58 @@ pub fn part_two(input: &str) -> Option<u32> {
 }
 
 fn find_max_flow_with_elephant(valves: &HashMap<String, Valve>, my_current_valve: &String, elephant_current_valve: &String, open_valves: &Vec<String>, my_time_left: u32, elephant_time_left: u32) -> u32 {
-    let possible_moves = get_possible_moves(&my_current_valve, &valves, &open_valves, my_time_left);
-    if possible_moves.is_empty() {
-        return 0;
+    let my_possible_moves = get_possible_moves(my_current_valve, valves, open_valves, my_time_left);
+    let elephant_possible_moves = get_possible_moves(elephant_current_valve, valves, open_valves, elephant_time_left);
+    if my_possible_moves.is_empty() {
+        if elephant_possible_moves.is_empty() {
+            return 0;
+        } else {
+            return find_max_flow(
+                valves, 
+                elephant_current_valve, 
+                open_valves, 
+                elephant_time_left
+            );
+        }
     }
 
     let mut best_move_return = 0_u32;
 
-    for (possible_move, possible_move_return, possible_move_cost) in possible_moves {
+    for (my_possible_move, my_possible_move_return, my_possible_move_cost) in &my_possible_moves {
         // Recursively try all sub-moves
 
         // First, calculate the data needed for the recursive call
-        let current_valve = &possible_move;
+        let my_current_valve = my_possible_move;
         let mut open_valves = open_valves.clone();
-        open_valves.push(current_valve.clone());
-        let time_left_after_move = my_time_left - possible_move_cost;
+        open_valves.push(my_possible_move.to_string());
+        let my_time_left_after_move = my_time_left - my_possible_move_cost;
 
-        // Recursive call
-        let return_after_move = find_max_flow(valves, current_valve, &open_valves, time_left_after_move);
-        
-        // Update return value if necessary
-        let total_return = possible_move_return + return_after_move;
-        if total_return > best_move_return {
-            best_move_return = total_return;
+        for (elephant_possible_move, elephant_possible_move_return, elephant_possible_move_cost) in &elephant_possible_moves {
+            // We can't make the same move as the elephant!
+            if elephant_possible_move == my_possible_move {
+                continue;
+            }
+
+            let elephant_current_valve = elephant_possible_move;
+            let mut open_valves = open_valves.clone();
+            open_valves.push(elephant_possible_move.to_string());
+            let elephant_time_left_after_move = elephant_time_left - elephant_possible_move_cost;
+
+            // Recursive call
+            let return_after_moves = find_max_flow_with_elephant(
+                valves, 
+                my_current_valve, 
+                elephant_current_valve, 
+                &open_valves, 
+                my_time_left_after_move, 
+                elephant_time_left_after_move
+            );
+
+            // Update return value if necessary
+            let total_return = my_possible_move_return + elephant_possible_move_return + return_after_moves;
+            if total_return > best_move_return {
+                best_move_return = total_return;
+            }
         }
     }
     
@@ -60,7 +89,7 @@ fn find_max_flow_with_elephant(valves: &HashMap<String, Valve>, my_current_valve
 }
 
 fn find_max_flow(valves: &HashMap<String, Valve>, current_valve: &String, open_valves: &Vec<String>, time_left: u32) -> u32 {
-    let possible_moves = get_possible_moves(&current_valve, &valves, &open_valves, time_left);
+    let possible_moves = get_possible_moves(current_valve, valves, open_valves, time_left);
     if possible_moves.is_empty() {
         return 0;
     }
