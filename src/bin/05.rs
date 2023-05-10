@@ -69,7 +69,7 @@ fn get_starting_max_height(lines: &Vec<&str>) -> Option<u32> {
 }
 
 fn read_crates(lines: &Vec<&str>) -> Option<Vec<Vec<char>>> {
-    let num_stacks = ((String::from(*lines.get(0)?).len() + 1) / 4) as u32;
+    let num_stacks = ((String::from(*lines.first()?).len() + 1) / 4) as u32;
     let max_stack_height = get_starting_max_height(lines)?;
 
     let mut stacks: Vec<Vec<char>> = Vec::new();
@@ -108,9 +108,9 @@ fn read_instructions(lines: &Vec<&str>) -> Option<Vec<Instruction>> {
         let to = (*line_split.get(INSTRUCTION_TO_LOCATION)?).parse::<usize>().unwrap() - 1;
 
         let instruction = Instruction{
-            num_crates: num_crates,
-            from: from,
-            to: to,
+            num_crates,
+            from,
+            to,
         };
 
         instructions.push(instruction);

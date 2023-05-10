@@ -19,7 +19,7 @@ fn find_start(input: &str, start_sequence_size: usize) -> Option<usize> {
         recent_letters[input_index] = *input_chars.get(input_index).unwrap();
     }
     // init chars_read
-    chars_read = (start_sequence_size - 1) as usize;
+    chars_read = start_sequence_size - 1;
 
     // analyze sequence
     for input_index in start_sequence_size - 1..input.len() {
@@ -64,12 +64,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 6);
-        assert_eq!(part_one(&input), Some(10 as usize));
+        assert_eq!(part_one(&input), Some(10_usize));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 6);
-        assert_eq!(part_two(&input), Some(29 as usize));
+        assert_eq!(part_two(&input), Some(29_usize));
     }
 }

@@ -6,7 +6,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     ).collect();
 
     let item_priorities: Vec<u32> = misplaced_items.into_iter().map(
-        |item| item_priority(item)
+        item_priority
     ).collect();
 
     Some(item_priorities.iter().sum())
@@ -17,13 +17,7 @@ fn find_misplaced_item(sack_contents: &str) -> Option<char> {
     let first_pouch = &sack_contents[..sack_contents.len()/2];
     let second_pouch: Vec<char> = sack_contents[sack_contents.len()/2..].chars().collect();
     
-    for item in first_pouch.chars() {
-        if second_pouch.contains(&item) {
-            return Some(item);
-        }
-    }
-
-    None
+    first_pouch.chars().find(|&item| second_pouch.contains(&item))
 }
 
 fn item_priority(item: char) -> u32 {
@@ -42,7 +36,7 @@ pub fn part_two(input: &str) -> Option<u32> {
     ).collect();
 
     let item_priorities: Vec<u32> = misplaced_items.into_iter().map(
-        |item| item_priority(item)
+        item_priority
     ).collect();
 
     Some(item_priorities.iter().sum())
@@ -54,13 +48,7 @@ fn find_badge(lines: &[&str]) -> Option<char> {
     let second_pouch: Vec<char> = lines[1].chars().collect();
     let third_pouch: Vec<char> = lines[2].chars().collect();
     
-    for item in first_pouch.chars() {
-        if second_pouch.contains(&item) && third_pouch.contains(&item) {
-            return Some(item);
-        }
-    }
-
-    None
+    first_pouch.chars().find(|&item| second_pouch.contains(&item) && third_pouch.contains(&item))
 }
 
 fn main() {
@@ -76,12 +64,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 3);
-        assert_eq!(part_one(&input), Some(157 as u32));
+        assert_eq!(part_one(&input), Some(157_u32));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 3);
-        assert_eq!(part_two(&input), Some(70 as u32));
+        assert_eq!(part_two(&input), Some(70_u32));
     }
 }

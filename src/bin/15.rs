@@ -20,7 +20,7 @@ pub fn part_one(input: &str, row: i32) -> Option<u32> {
         total_coverage += (area[1] - area[0]) as u32;
     }
 
-    Some(total_coverage as u32)
+    Some(total_coverage)
 }
 
 fn part_two_solve(input: &str) -> Option<u64> {
@@ -34,7 +34,7 @@ pub fn part_two(input: &str, upper_bounds: i32) -> Option<u64> {
         let coverage = limit_coverage(coverage, 0, upper_bounds);
         
         if coverage.len() != 1 {
-            let x = (coverage.get(0).unwrap()[1] + 1) as u64;
+            let x = (coverage.first().unwrap()[1] + 1) as u64;
             let y = row as u64;
             return Some((4000000 * x) + y);
         }
@@ -163,23 +163,20 @@ fn read_input(input: &str) -> Option<Vec<BeaconSensor>> {
 
     for line in input.lines() {
         let sensor_x: Vec<&str> = line.split("x=").collect();
-        let sensor_x: Vec<&str> = sensor_x.get(1)?.split(",").collect();
-        let sensor_x = sensor_x
-            .get(0)?
+        let sensor_x: Vec<&str> = sensor_x.get(1)?.split(',').collect();
+        let sensor_x = sensor_x.first()?
             .parse::<i32>()
             .expect("Failed to parse sensor x position");
 
         let sensor_y: Vec<&str> = line.split("y=").collect();
-        let sensor_y: Vec<&str> = sensor_y.get(1)?.split(":").collect();
-        let sensor_y = sensor_y
-            .get(0)?
+        let sensor_y: Vec<&str> = sensor_y.get(1)?.split(':').collect();
+        let sensor_y = sensor_y.first()?
             .parse::<i32>()
             .expect("Failed to parse sensor y position");
 
         let beacon_x: Vec<&str> = line.split("x=").collect();
-        let beacon_x: Vec<&str> = beacon_x.get(2)?.split(",").collect();
-        let beacon_x = beacon_x
-            .get(0)?
+        let beacon_x: Vec<&str> = beacon_x.get(2)?.split(',').collect();
+        let beacon_x = beacon_x.first()?
             .parse::<i32>()
             .expect("Failed to parse beacon x position");
 

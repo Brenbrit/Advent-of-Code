@@ -39,8 +39,8 @@ pub fn part_one(input: &str) -> Option<usize> {
     // Get relevant folders
     for item in sizes.keys() {
         if directories.contains(item) 
-        && *sizes.get(item).unwrap() <= (100000 as usize)
-        && item != "" 
+        && *sizes.get(item).unwrap() <= 100000_usize
+        && !item.is_empty() 
         {
             sum_of_big_folder_sizes += *sizes.get(item).unwrap();
         }
@@ -96,7 +96,7 @@ fn read_commands(input: &str) -> Option<Vec<Command>> {
     for command_str in split.iter() {
 
         if command_str.starts_with("cd") {
-            let cd_split: Vec<&str> = command_str.split(" ").collect();
+            let cd_split: Vec<&str> = command_str.split(' ').collect();
             let cd_destination = cd_split.get(1)?;
             commands.push(Command::CD(String::from((*cd_destination).trim())));
             continue;
@@ -107,8 +107,8 @@ fn read_commands(input: &str) -> Option<Vec<Command>> {
 
             let lines: Vec<&str> = command_str.lines().collect();
             for line in lines.iter().skip(1) {
-                let line_split: Vec<&str> = line.split(" ").collect();
-                let first_word = *line_split.get(0)?;
+                let line_split: Vec<&str> = line.split(' ').collect();
+                let first_word = *line_split.first()?;
                 let second_word = *line_split.get(1)?;
                 if first_word == "dir" {
                     dirs.push(String::from(second_word));
@@ -135,7 +135,7 @@ fn interpret_commands(commands: Vec<Command>) -> Option<HashMap<String, Option<u
             Command::CD(new_directory) => {
 
                 if new_directory.as_str() == ".." {
-                    let current_path_split: Vec<&str> = current_directory.split("/").collect();
+                    let current_path_split: Vec<&str> = current_directory.split('/').collect();
                     let (_, before_last) = current_path_split.split_last().unwrap();
                     current_directory = before_last.join("/");
                 } else if new_directory.as_str() == "/" {
@@ -213,12 +213,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 7);
-        assert_eq!(part_one(&input), Some(95437 as usize));
+        assert_eq!(part_one(&input), Some(95437_usize));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 7);
-        assert_eq!(part_two(&input), Some(24933642 as usize));
+        assert_eq!(part_two(&input), Some(24933642_usize));
     }
 }

@@ -48,15 +48,15 @@ pub fn part_two(input: &str) -> Option<u32> {
 
 fn parse_line(line: &str) -> ([u32; 2], [u32; 2]) {
     let split: Vec<&str> = line.split(',').collect();
-    let first_job: Vec<&str> = split.get(0).unwrap().split('-').collect();
+    let first_job: Vec<&str> = split.first().unwrap().split('-').collect();
     let second_job: Vec<&str> = split.get(1).unwrap().split('-').collect();
     
     let first_job: [u32; 2] = [
-        first_job.get(0).unwrap().parse::<u32>().unwrap(),
+        first_job.first().unwrap().parse::<u32>().unwrap(),
         first_job.get(1).unwrap().parse::<u32>().unwrap()
     ];
     let second_job: [u32; 2] = [
-        second_job.get(0).unwrap().parse::<u32>().unwrap(),
+        second_job.first().unwrap().parse::<u32>().unwrap(),
         second_job.get(1).unwrap().parse::<u32>().unwrap()
     ];
 
@@ -76,12 +76,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 4);
-        assert_eq!(part_one(&input), Some(2 as u32));
+        assert_eq!(part_one(&input), Some(2_u32));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 4);
-        assert_eq!(part_two(&input), Some(4 as u32));
+        assert_eq!(part_two(&input), Some(4_u32));
     }
 }

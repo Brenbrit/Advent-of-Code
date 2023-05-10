@@ -36,10 +36,7 @@ impl Graph {
             return Some(0)
         }
 
-        match self.data.get(&format!("{:?},{:?}", source, destination)) {
-            Some(i) => Some(*i),
-            None => None,
-        }
+        self.data.get(&format!("{:?},{:?}", source, destination)).copied()
     }
 }
 
@@ -67,9 +64,8 @@ pub fn part_two(input: &str) -> Option<u32> {
 
     for row in 0..rows {
         for col in 0..columns {
-            if topology.get(row).unwrap()
+            if *topology.get(row).unwrap()
                 .get(col).unwrap()
-                .clone()
                 == 0 {
                 min_elevation_points.push((row, col));
             }
@@ -98,7 +94,7 @@ fn reverse_dijkstra(mut graph: Graph, destination: (usize, usize)) -> Option<Gra
 
     // mark all nodes to unvisited and set initial values to infinity
     for node in graph.visited_nodes.keys() {
-        let node = node.clone();
+        let node = *node;
         unvisited_nodes.insert(node);
         tentative_distances.insert(node, u32::MAX);
     }
@@ -112,7 +108,7 @@ fn reverse_dijkstra(mut graph: Graph, destination: (usize, usize)) -> Option<Gra
         let mut closest_node_distance = u32::MAX;
         for unvisited_node in &unvisited_nodes {
             if *tentative_distances.get(unvisited_node).unwrap() < closest_node_distance {
-                closest_node = unvisited_node.clone();
+                closest_node = *unvisited_node;
                 closest_node_distance = *tentative_distances.get(unvisited_node).unwrap();
             }
         }
@@ -127,7 +123,7 @@ fn reverse_dijkstra(mut graph: Graph, destination: (usize, usize)) -> Option<Gra
 
         // for each neighbor of closest_node still in unvisited_nodes,
         for possible_source in &unvisited_nodes {
-            let possible_source = possible_source.clone();
+            let possible_source = *possible_source;
             // If the graph has a path from closest_node to unvisited_neighbor,
             if let Some(neighbor_dist) = graph.get(possible_source, closest_node) {
                 // Calculate alternative distance from possible_source to destination
@@ -264,12 +260,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 12);
-        assert_eq!(part_one(&input), Some(31 as u32));
+        assert_eq!(part_one(&input), Some(31_u32));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 12);
-        assert_eq!(part_two(&input), Some(29 as u32));
+        assert_eq!(part_two(&input), Some(29_u32));
     }
 }

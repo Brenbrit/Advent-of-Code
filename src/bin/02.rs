@@ -1,7 +1,7 @@
 pub fn part_one(input: &str) -> Option<u32> {
     let split: Vec<&str> = input.lines().collect();
 
-    let plays = &split.into_iter().map(|line| line_to_plays_1(line)).collect();
+    let plays = &split.into_iter().map(line_to_plays_1).collect();
 
     Some(calculate_score(plays))
 }
@@ -58,7 +58,7 @@ fn calculate_score(rounds: &Vec<(Play, Play)>) -> u32 {
 }
 
 fn line_to_plays_1(line: &str) -> (Play, Play) {
-    let their_play = match line.chars().nth(0).unwrap() {
+    let their_play = match line.chars().next().unwrap() {
         'A' => Play::Rock,
         'B' => Play::Paper,
         _ => Play::Scissors,
@@ -73,7 +73,7 @@ fn line_to_plays_1(line: &str) -> (Play, Play) {
 }
 
 fn line_to_plays_2(line: &str) -> (Play, Play) {
-    let their_play = match line.chars().nth(0).unwrap() {
+    let their_play = match line.chars().next().unwrap() {
         'A' => Play::Rock,
         'B' => Play::Paper,
         _ => Play::Scissors,
@@ -102,7 +102,7 @@ fn line_to_plays_2(line: &str) -> (Play, Play) {
 pub fn part_two(input: &str) -> Option<u32> {
     let split: Vec<&str> = input.lines().collect();
 
-    let plays = &split.into_iter().map(|line| line_to_plays_2(line)).collect();
+    let plays = &split.into_iter().map(line_to_plays_2).collect();
 
     Some(calculate_score(plays))
 }
@@ -120,12 +120,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 2);
-        assert_eq!(part_one(&input), Some(15 as u32));
+        assert_eq!(part_one(&input), Some(15_u32));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 2);
-        assert_eq!(part_two(&input), Some(12 as u32));
+        assert_eq!(part_two(&input), Some(12_u32));
     }
 }

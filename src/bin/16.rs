@@ -1,6 +1,5 @@
 const TOTAL_TIME: u32 = 30;
 
-use core::time;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -19,7 +18,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 
     loop {
         let possible_moves = get_possible_moves(&current_valve, &valves, &open_valves, TOTAL_TIME - current_time);
-        if possible_moves.len() == 0 {
+        if possible_moves.is_empty() {
             break;
         }
         dbg!(&possible_moves);
@@ -28,7 +27,7 @@ pub fn part_one(input: &str) -> Option<u32> {
         let mut best_choice_return: u32 = 0;
         for (move_name, move_return) in &possible_moves {
             if *move_return > best_choice_return {
-                best_choice_name = &move_name;
+                best_choice_name = move_name;
                 best_choice_return = *move_return;
             }
         }
@@ -54,7 +53,7 @@ fn get_possible_moves(current_valve: &String, valves: &HashMap<String, Valve>, o
     for (destination, destination_cost) in connected_valves {
 
         // We've already visited this node. Not a valid move.
-        if open_valves.contains(&destination) {
+        if open_valves.contains(destination) {
             continue;
         }
 
@@ -78,15 +77,14 @@ fn read_input(input: &str) -> Option<HashMap<String, Valve>> {
     let mut pipes: HashMap<String, Valve> = HashMap::new();
 
     for line in lines {
-        let line_split: Vec<&str> = line.split(" ").collect();
+        let line_split: Vec<&str> = line.split(' ').collect();
         let pipe_name = String::from(*line_split.get(1)?);
 
         let rate_word = *line_split.get(4)?;
-        let rate: Vec<&str> = rate_word.split("=").collect();
+        let rate: Vec<&str> = rate_word.split('=').collect();
         let rate = *rate.get(1)?;
-        let rate: Vec<&str> = rate.split(";").collect();
-        let rate = rate
-            .get(0)?
+        let rate: Vec<&str> = rate.split(';').collect();
+        let rate = rate.first()?
             .parse::<u32>()
             .unwrap();
 
@@ -99,7 +97,7 @@ fn read_input(input: &str) -> Option<HashMap<String, Valve>> {
         pipes.insert(
             pipe_name,
             Valve {
-                rate: rate,
+                rate,
                 connected_valves: other_valves,
             }
         );
@@ -116,7 +114,7 @@ fn remove_zeros(mut valves: HashMap<String, Valve>) -> HashMap<String, Valve> {
 
     // Find which source nodes we need to run dijkstra's on
     let mut source_nodes_without_zeros: Vec<String> = vec![];
-    for source_node in (&valves).keys().collect::<Vec<&String>>() {
+    for source_node in valves.keys().collect::<Vec<&String>>() {
         if ! (zero_valves.contains(source_node) && **source_node != "AA".to_string()) {
             source_nodes_without_zeros.push(source_node.clone());
         }

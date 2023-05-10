@@ -120,10 +120,10 @@ fn is_tree_visible(grid: &Vec<Vec<u8>>, row: usize, col: usize) -> Option<bool> 
     fn tree_visible_from_direction(max_direction_height: Option<u8>, tree_height: u8) -> bool {
         match max_direction_height {
             Some(max_height) => {
-                return max_height < tree_height;
+                max_height < tree_height
             },
             None => {
-                return ! tree_height == 0;
+                ! tree_height == 0
             }
         }
     }
@@ -233,12 +233,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 8);
-        assert_eq!(part_one(&input), Some(21 as u32));
+        assert_eq!(part_one(&input), Some(21_u32));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 8);
-        assert_eq!(part_two(&input), Some(8 as u32));
+        assert_eq!(part_two(&input), Some(8_u32));
     }
 }

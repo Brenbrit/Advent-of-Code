@@ -63,7 +63,7 @@ fn follow_knot(leading_knot: &[i32; 2], following_knot: [i32; 2]) -> [i32; 2] {
         return following_knot;
     }
 
-    let mut to_return = following_knot.clone();
+    let mut to_return = following_knot;
 
     // we need to move, but in which direction?
     if (leading_knot[0] - following_knot[0]).abs() > 1 {
@@ -158,7 +158,7 @@ fn read_moves(input: &str) -> Option<Vec<Move>> {
         let num_moves = line.split(' ').nth(1)?.parse::<u32>().unwrap();
         for _ in 0..num_moves {
             moves.push(
-                match line.chars().nth(0)? {
+                match line.chars().next()? {
                     'U' => {Move::Up},
                     'D' => {Move::Down},
                     'L' => {Move::Left},
@@ -188,12 +188,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 9);
-        assert_eq!(part_one(&input), Some(13 as u32));
+        assert_eq!(part_one(&input), Some(13_u32));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 9);
-        assert_eq!(part_two(&input), Some(1 as u32));
+        assert_eq!(part_two(&input), Some(1_u32));
     }
 }

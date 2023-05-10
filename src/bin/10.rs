@@ -52,11 +52,11 @@ fn calc_during_cycles(commands: &Vec<Command>) -> Vec<i32> {
     for command in commands.iter() {
         match command {
             Command::Addx(num) => {
-                during_cycle.push(during_cycle.last().unwrap().clone());
+                during_cycle.push(*during_cycle.last().unwrap());
                 during_cycle.push(during_cycle.last().unwrap() + num);
             },
             Command::NoOp => {
-                during_cycle.push(during_cycle.last().unwrap().clone());
+                during_cycle.push(*during_cycle.last().unwrap());
             },
         }
     }
@@ -70,7 +70,7 @@ fn read_commands(input: &str) -> Option<Vec<Command>> {
 
     for line in lines {
         let line_split: Vec<&str> = line.split(' ').collect();
-        let command_type = *line_split.get(0)?;
+        let command_type = *line_split.first()?;
         match command_type {
             "noop" => {
                 to_return.push(Command::NoOp);

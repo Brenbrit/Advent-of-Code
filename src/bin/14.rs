@@ -84,7 +84,7 @@ fn read_rock_formations(input: &str) -> Option<(HashSet<[u32; 2]>, u32)> {
 
     for line in input.lines() {
         let rock_vertices: Vec<&str> = line.split(" -> ").collect();
-        if rock_vertices.len() == 0 { continue }
+        if rock_vertices.is_empty() { continue }
 
         // Read first vertex of formation and add to formations
         let first_vertex = parse_rock_coordinates(rock_vertices.first().unwrap())?;
@@ -127,9 +127,9 @@ fn read_rock_formations(input: &str) -> Option<(HashSet<[u32; 2]>, u32)> {
 }
 
 fn parse_rock_coordinates(coordinates: &str) -> Option<[u32; 2]> {
-    let split: Vec<&str> = coordinates.split(",").collect();
+    let split: Vec<&str> = coordinates.split(',').collect();
     Some(
-        [split.get(0)?.parse::<u32>()
+        [split.first()?.parse::<u32>()
         .expect("Failed to parse X value of coordinate"), 
         split.get(1)?.parse::<u32>()
         .expect("Failed to parse Y value of coordinate")

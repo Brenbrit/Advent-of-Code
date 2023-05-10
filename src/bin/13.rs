@@ -37,7 +37,7 @@ impl From<&str> for List {
             }
         }
 
-        List { elements: elements }
+        List { elements }
     }
 }
 
@@ -200,7 +200,7 @@ fn read_input_part_2(input: &str) -> Option<Vec<List>> {
     let mut lists: Vec<List> = vec![];
 
     for line in lines {
-        if line == "" {
+        if line.is_empty() {
             continue;
         }
         lists.push(List::from(line));
@@ -266,12 +266,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 13);
-        assert_eq!(part_one(&input), Some(13 as u32));
+        assert_eq!(part_one(&input), Some(13_u32));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 13);
-        assert_eq!(part_two(&input), Some(140 as u32));
+        assert_eq!(part_two(&input), Some(140_u32));
     }
 }

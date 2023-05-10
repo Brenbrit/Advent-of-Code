@@ -18,13 +18,13 @@ struct Monkey {
 
 impl Monkey {
     fn pop_next_item(&mut self) -> Option<u64> {
-        let item = self.items.borrow().get(0)?.clone();
+        let item = *self.items.borrow().first()?;
         self.items.borrow_mut().remove(0);
         Some(item)
     }
 
     fn peek_next_item(&self) -> Option<u64> {
-        Some(self.items.borrow().get(0)?.clone())
+        Some(*self.items.borrow().first()?)
     }
 
     fn push_item(&mut self, item: u64) {
@@ -165,7 +165,6 @@ fn read_monkeys(input: &str) -> Option<(Vec<Monkey>, u64)> {
             .last()?
             .trim()
             .split(", ")
-            .into_iter()
             .map(|x| x.parse::<u64>().expect("Failed to interpret starting item"))
             .collect();
 
@@ -173,9 +172,9 @@ fn read_monkeys(input: &str) -> Option<(Vec<Monkey>, u64)> {
             .get(2)?
             .split("Operation: new = ")
             .last()?;
-        let operation_parts: Vec<&str> = operation_expr.split(" ").collect();
+        let operation_parts: Vec<&str> = operation_expr.split(' ').collect();
         let monkey_operation = Expression{
-            left_hand_side: match *operation_parts.get(0)? {
+            left_hand_side: match *operation_parts.first()? {
                 "old" => OperationTerm::Old,
                 constant => OperationTerm::Constant(
                     constant.parse::<u64>()
@@ -200,7 +199,7 @@ fn read_monkeys(input: &str) -> Option<(Vec<Monkey>, u64)> {
         };
 
         let divisible_by: Vec<&str> = (*monkey_group.get(3)?)
-            .split(" ")
+            .split(' ')
             .collect();
         let divisible_by = divisible_by
             .last()?
@@ -209,7 +208,7 @@ fn read_monkeys(input: &str) -> Option<(Vec<Monkey>, u64)> {
         lcm = find_lcm(lcm, divisible_by);
 
         let true_throw: Vec<&str> = (*monkey_group.get(4)?)
-            .split(" ")
+            .split(' ')
             .collect();
         let true_throw = true_throw
             .last()?
@@ -217,7 +216,7 @@ fn read_monkeys(input: &str) -> Option<(Vec<Monkey>, u64)> {
             .expect("Failed to interpret test -> true throw");
 
         let false_throw: Vec<&str> = (*monkey_group.get(5)?)
-            .split(" ")
+            .split(' ')
             .collect();
         let false_throw = false_throw
             .last()?
@@ -225,7 +224,7 @@ fn read_monkeys(input: &str) -> Option<(Vec<Monkey>, u64)> {
             .expect("Failed to interpret test -> false throw");
 
         let monkey_test = Test{
-            divisible_by: divisible_by,
+            divisible_by,
             r#true: true_throw,
             r#false: false_throw,
         };
@@ -246,20 +245,18 @@ fn read_monkeys(input: &str) -> Option<(Vec<Monkey>, u64)> {
 fn find_gcd(mut a:u64, mut b:u64) -> u64{
     if a==b { return a; }
     if b > a {
-        let temp = a;
-        a = b;
-        b = temp;
+        std::mem::swap(&mut a, &mut b);
     }
     while b>0 {
         let temp = a;
         a = b;
         b = temp%b;
     }
-    return a;
+    a
 }
 
 fn find_lcm(a:u64, b:u64) -> u64{
-    return a*(b/find_gcd(a,b));
+    a*(b/find_gcd(a,b))
 }
 
 fn main() {
@@ -275,12 +272,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 11);
-        assert_eq!(part_one(&input), Some(10605 as u64));
+        assert_eq!(part_one(&input), Some(10605_u64));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 11);
-        assert_eq!(part_two(&input), Some(2713310158 as u64));
+        assert_eq!(part_two(&input), Some(2713310158_u64));
     }
 }
