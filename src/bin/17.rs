@@ -1,10 +1,11 @@
 const NUM_ROCKS_1: usize = 2022;
 const NUM_ROCKS_2: usize = 1000000000000;
+//const NUM_ROCKS_2: usize = 1000;
 // 0 means that rocks start at the same y index as the max rock.
 // Set to 3 to start rocks 3 spaces above the highest rock.
 const DROP_HEIGHT: u8 = 3;
 
-use std::fmt;
+use std::{fmt, cmp::max};
 
 #[derive(Clone, Debug)]
 enum Jet {
@@ -92,6 +93,7 @@ impl Piece {
 #[derive(Clone, Debug)]
 struct Column {
     spaces: Vec<[bool; 7]>,
+    last_move_on_row: Vec<Vec<usize>>,
     highest_rock: u64,
 }
 
@@ -99,6 +101,7 @@ impl Column {
     fn new() -> Self {
         Self {
             spaces: vec![],
+            last_move_on_row: vec![],
             highest_rock: 0,
         }
     }
@@ -133,20 +136,6 @@ impl Column {
 
             let can_move = piece_can_move(&piece, &move_direction, &self.spaces);
 
-            /*match move_direction {
-                MoveDirection::Right => {
-                    println!("Piece index {} wants to move right. It can do this => {}", piece_num, can_move);
-                },
-                MoveDirection::Left => {
-                    println!("Piece index {} wants to move left. It can do this => {}", piece_num, can_move);
-                },
-                MoveDirection::Down => {
-                    println!("Piece index {} wants to move down. It can do this => {}", piece_num, can_move);
-                },
-            }
-
-            draw_falling_piece(&self, &piece);*/
-
             if ! can_move {
                 match move_direction {
                     MoveDirection::Down => {
@@ -154,7 +143,7 @@ impl Column {
                         // Therefore, this piece has come to rest.
                         // Apply changes to column.
                         let mut max_y_position = 0;
-                        for piece_part in piece.spaces {
+                        for piece_part in &piece.spaces {
                             self.spaces.get_mut(piece_part[1] as usize).unwrap()[(piece_part[0] as usize)] = true;
                             if piece_part[1] > max_y_position {
                                 max_y_position = piece_part[1];
@@ -164,7 +153,21 @@ impl Column {
                         // Update the max height of the column
                         let max_y_position = max_y_position as u64;
                         if max_y_position + 1 > self.highest_rock {
+
+                            // make room in last_move_on_row
+                            for _ in self.highest_rock..(max_y_position + 1) {
+                                self.last_move_on_row.push(vec![]);
+                            }
+
                             self.highest_rock = max_y_position + 1;
+                        }
+
+                        // update the list of which piece num touched each row
+                        for piece_part in &piece.spaces {
+                            let y_position = piece_part[1] as usize;
+                            let mut last_edited_list = self.last_move_on_row[y_position].clone();
+                            last_edited_list.push(piece_num);
+                            self.last_move_on_row[y_position] = last_edited_list;
                         }
 
                         break;
@@ -239,7 +242,14 @@ impl fmt::Display for Column {
                     false => { "." },
                 });
             }
-            to_return.push_str("|\n");
+
+            to_return.push_str(&format!("| <- row {}", row_index));
+
+            let row_end = match self.last_move_on_row.get(row_index) {
+                Some(list) => format!(", last edited list {:?}\n", list),
+                None => "\n".to_owned(),
+            };
+            to_return.push_str(&row_end);
         }
 
         // Bottom row (always the same)
@@ -256,7 +266,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 
 pub fn part_two(input: &str) -> Option<u64> {
     let jets = read_input(input)?;
-    Some(calculate_tower_height(&jets, NUM_ROCKS_2))
+    Some(calculate_tower_height_by_chunks(&jets, NUM_ROCKS_2))
 }
 
 fn piece_can_move(piece: &Piece, move_direction: &MoveDirection, column: &Vec<[bool; 7]>) -> bool {
@@ -303,6 +313,95 @@ fn calculate_tower_height(jets: &Vec<Jet>, num_rocks: usize) -> u64 {
     column.highest_rock
 }
 
+fn calculate_tower_height_by_chunks(jets: &Vec<Jet>, num_rocks: usize) -> u64 {
+    let mut column = Column::new();
+    let mut global_jet_index: usize = 0;
+    let mut piece_num = 0;
+    let mut pattern_period = 1;
+    let mut pattern_start_point: usize = 0;
+
+    'period_loop: loop {
+        'start_point_loop: for start_point in 0..(pattern_period as usize) {
+            // Is our tower tall enough for accurate pattern detection?
+            let needed_height = start_point + (3 * pattern_period);
+            while column.highest_rock < (needed_height as u64) {
+                global_jet_index = column.drop_piece(piece_num, jets, global_jet_index);
+                piece_num += 1;
+            }
+
+            // Determine if this start point and period forms a pattern
+            for period_index in 0..pattern_period {
+                // Get indexes of rows to compare
+                let first_pattern_row_index = start_point + period_index;
+                let second_pattern_row_index = start_point + pattern_period + period_index;
+                let third_pattern_row_index = start_point + (pattern_period * 2) + period_index;
+
+                let first_row = column.spaces.get(first_pattern_row_index).unwrap();
+                let second_row = column.spaces.get(second_pattern_row_index).unwrap();
+                let third_row = column.spaces.get(third_pattern_row_index).unwrap();
+                
+                if first_row != second_row || first_row != third_row || second_row != third_row {
+                    // These rows don't match. Keep searching.
+                    continue 'start_point_loop;
+                }
+            }
+
+            println!("Pattern found!");
+            pattern_start_point = start_point;
+            break 'period_loop;
+        }
+
+        // We did not find a pattern with this period. Try the next one!
+        pattern_period += 1;
+    }
+
+    // pattern_start_point
+    // pattern_period
+    // column: list<[bool; 7]>
+
+    println!("Pattern starts at row index {} and has period {} rows.", pattern_start_point, pattern_period);
+
+    // How many pieces were dropped *before* the pattern pieces?
+    let edited_list_before_pattern = column.last_move_on_row.get(pattern_start_point - 1).unwrap();
+    let pieces_before_pattern = edited_list_before_pattern.iter().max().unwrap();
+    let first_pattern_piece = pieces_before_pattern + 1;
+    let last_pattern_piece = *column.last_move_on_row.get(pattern_start_point + pattern_period - 1).unwrap().iter().max().unwrap();
+    dbg!(first_pattern_piece);
+
+    // The number of pieces in each pattern period
+    let pattern_pieces = last_pattern_piece - first_pattern_piece + 1;
+    println!("Pattern starts after {} pieces and {} rows.", pieces_before_pattern, pattern_start_point - 1);
+    println!("Pattern is {} pieces and {} rows long.", pattern_pieces, pattern_period);
+    
+    // How many times does the pattern need to be repeated?
+    let patterns_needed = (num_rocks - pieces_before_pattern) / pattern_pieces;
+    let pieces_needed_after_pattern = (num_rocks - pieces_before_pattern) % pattern_pieces;
+    println!("The pattern will need to be repeated {} times, and then {} pieces need to be dropped.", patterns_needed, pieces_needed_after_pattern);
+
+    let mut extra_pieces_height = 0;
+    let last_edited_lower_bound = first_pattern_piece + pieces_needed_after_pattern;
+    println!("Searching for the first row where last_edited >= {}", last_edited_lower_bound);
+    println!("First pattern piece: {}, pieces needed after pattern: {}, lower bound: {}", first_pattern_piece, pieces_needed_after_pattern, last_edited_lower_bound);
+    
+    for extra_row in (0..pattern_period).rev() {
+        // We are looking for the first row where the last edited piece is >= last_edited_lower_bound
+        let extra_row_index = extra_row + pattern_start_point;
+        let extra_row_last_edited = column.last_move_on_row.get(extra_row_index).unwrap();
+        if extra_row_last_edited.contains(&last_edited_lower_bound) {
+            extra_pieces_height = extra_row;
+            println!("First row to match extra row criteria is {}", extra_row_index);
+            break;
+        }
+    }
+
+    println!("Dropping the extra {} pieces resulted in {} more rows.", pieces_needed_after_pattern, extra_pieces_height);
+    println!("Rows before pattern starts: {}", pattern_start_point - 1);
+    println!("Patterns needed ({}) * pattern period ({}): {}", patterns_needed, pattern_period, patterns_needed * pattern_period);
+    println!("Rows from extra pieces after pattern: {}", extra_pieces_height);
+
+    ((pattern_start_point - 1) + (patterns_needed * pattern_period) + extra_pieces_height) as u64
+}
+
 fn read_input(input: &str) -> Option<Vec<Jet>> {
     let mut jets: Vec<Jet> = vec![];
 
@@ -334,6 +433,11 @@ mod tests {
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 17);
         assert_eq!(part_one(&input), Some(3068_u32));
+
+        // Test part 2 solver with part 1 data
+        let jets = read_input(&input).unwrap();
+        let chunk_answer = calculate_tower_height_by_chunks(&jets, NUM_ROCKS_1);
+        assert_eq!(chunk_answer, 3068_u64);
     }
 
     #[test]
