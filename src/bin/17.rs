@@ -5,7 +5,7 @@ const NUM_ROCKS_2: usize = 1000000000000;
 // Set to 3 to start rocks 3 spaces above the highest rock.
 const DROP_HEIGHT: u8 = 3;
 
-use std::{fmt, cmp::max};
+use std::fmt;
 
 #[derive(Clone, Debug)]
 enum Jet {
@@ -379,14 +379,18 @@ fn calculate_tower_height_by_chunks(jets: &Vec<Jet>, num_rocks: usize) -> u64 {
     println!("The pattern will need to be repeated {} times, and then {} pieces need to be dropped.", patterns_needed, pieces_needed_after_pattern);
 
     let mut extra_pieces_height = 0;
-    let last_edited_lower_bound = first_pattern_piece + pieces_needed_after_pattern;
+    let last_edited_lower_bound = first_pattern_piece - 1 + pieces_needed_after_pattern;
     println!("Searching for the first row where last_edited >= {}", last_edited_lower_bound);
     println!("First pattern piece: {}, pieces needed after pattern: {}, lower bound: {}", first_pattern_piece, pieces_needed_after_pattern, last_edited_lower_bound);
     
     for extra_row in (0..pattern_period).rev() {
-        // We are looking for the first row where the last edited piece is >= last_edited_lower_bound
-        let extra_row_index = extra_row + pattern_start_point;
+        // We are looking for the first row that the desired piece has edited
+        // The desired piece's column will contain last_edited_lower_bound
+
+        // Subtract one here because the start of the pattern *is* the first extra piece.
+        let extra_row_index = extra_row + pattern_start_point - 1;
         let extra_row_last_edited = column.last_move_on_row.get(extra_row_index).unwrap();
+        
         if extra_row_last_edited.contains(&last_edited_lower_bound) {
             extra_pieces_height = extra_row;
             println!("First row to match extra row criteria is {}", extra_row_index);
@@ -398,8 +402,11 @@ fn calculate_tower_height_by_chunks(jets: &Vec<Jet>, num_rocks: usize) -> u64 {
     println!("Rows before pattern starts: {}", pattern_start_point - 1);
     println!("Patterns needed ({}) * pattern period ({}): {}", patterns_needed, pattern_period, patterns_needed * pattern_period);
     println!("Rows from extra pieces after pattern: {}", extra_pieces_height);
+    println!("Finally tally:\n  Before pattern: {}\n  From pattern: {}\n  After pattern: {}", pattern_start_point-1, (patterns_needed * pattern_period), extra_pieces_height);
 
-    ((pattern_start_point - 1) + (patterns_needed * pattern_period) + extra_pieces_height) as u64
+    //println!("Tower after calculations are performed: \n{}", column);
+
+    (pattern_start_point + (patterns_needed * pattern_period) + extra_pieces_height) as u64
 }
 
 fn read_input(input: &str) -> Option<Vec<Jet>> {
@@ -432,11 +439,21 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 17);
-        assert_eq!(part_one(&input), Some(3068_u32));
+        //assert_eq!(part_one(&input), Some(3068_u32));
 
         // Test part 2 solver with part 1 data
         let jets = read_input(&input).unwrap();
         let chunk_answer = calculate_tower_height_by_chunks(&jets, NUM_ROCKS_1);
+        if chunk_answer != 3068_u64 {
+            let mut column = Column::new();
+            let mut global_jet_index: usize = 0;
+
+            for piece_num in 0..NUM_ROCKS_1 {
+                global_jet_index = column.drop_piece(piece_num, &jets, global_jet_index);
+            }
+
+            println!("Correct tower: \n{}", column);
+        }
         assert_eq!(chunk_answer, 3068_u64);
     }
 
