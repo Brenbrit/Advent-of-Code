@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 const ADJACENT_COORDINATES: [[i32; 3]; 6] = [[0, 0, 1], [0, 0, -1], [0, 1, 0], [0, -1, 0], [1, 0, 0], [-1, 0, 0]];
 
 pub fn part_one(input: &str) -> Option<u32> {
@@ -67,8 +65,10 @@ fn shrink_wrap_surface_area(points: Vec<(u32, u32, u32)>) -> u32 {
     // Filter out all exterior bubbles
     let mut interior_air_bubbles: Vec<(u32, u32, u32)> = vec![];
     for air_bubble in air_bubbles {
-        if ! bubble_is_exterior(&air_bubble, &points, &shrink_wrap_dimensions) {
-            interior_air_bubbles.push(air_bubble);
+        if interior_air_bubbles.contains(&air_bubble) { continue; }
+        let (exterior, mut same_status_bubbles) = bubble_is_exterior(&air_bubble, &points, &shrink_wrap_dimensions);
+        if ! exterior {
+            interior_air_bubbles.append(&mut same_status_bubbles);
         }
     }
 
@@ -114,7 +114,7 @@ fn find_shrink_wrap_dimensions(points: &Vec<(u32, u32, u32)>) -> ([u32; 3], [u32
 }
 
 // Does the bubble at the given point have a path out of the object?
-fn bubble_is_exterior(bubble: &(u32, u32, u32), points: &Vec<(u32, u32, u32)>, shrink_wrap_dimensions: &([u32; 3], [u32; 3])) -> bool {
+fn bubble_is_exterior(bubble: &(u32, u32, u32), points: &Vec<(u32, u32, u32)>, shrink_wrap_dimensions: &([u32; 3], [u32; 3])) -> (bool, Vec<(u32, u32, u32)>) {
     let mut scanned_bubbles: Vec<(u32, u32, u32)> = vec![];
     let mut bubbles_to_scan: Vec<(u32, u32, u32)> = Vec::from([*bubble]);
     while ! &bubbles_to_scan.is_empty() {
@@ -122,7 +122,8 @@ fn bubble_is_exterior(bubble: &(u32, u32, u32), points: &Vec<(u32, u32, u32)>, s
         for bubble in &bubbles_to_scan {
             // Have we reached the outside?
             if ! point_in_shrink_wrap(&bubble, shrink_wrap_dimensions) {
-                return true;
+                scanned_bubbles.push(bubble.clone());
+                return (true, scanned_bubbles)
             }
 
             // This bubble is not *currently* exterior - it is scanned.
@@ -155,7 +156,7 @@ fn bubble_is_exterior(bubble: &(u32, u32, u32), points: &Vec<(u32, u32, u32)>, s
         bubbles_to_scan = next_bubbles_to_scan;
     }
 
-    false
+    (false, scanned_bubbles)
 }
 
 // Is a given coordinate within the shrink-wrap?
