@@ -75,7 +75,7 @@ fn shrink_wrap_surface_area(points: Vec<(u32, u32, u32)>) -> u32 {
     println!("Interior air bubbles: {:?}", interior_air_bubbles);
 
     if interior_air_bubbles.len() > 0 {
-        naiive_surface_area(points) - shrink_wrap_surface_area(interior_air_bubbles)
+        naiive_surface_area(points) - naiive_surface_area(interior_air_bubbles)
     } else {
         naiive_surface_area(points)
     }
@@ -257,12 +257,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 18);
-        assert_eq!(part_one(&input), Some(64_u32));
+        assert_eq!(part_one(&input), Some(70_u32));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 18);
-        assert_eq!(part_two(&input), Some(58_u32));
+        assert_eq!(part_two(&input), Some(64_u32));
     }
 }
