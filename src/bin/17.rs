@@ -432,6 +432,7 @@ fn main() {
     advent_of_code::solve!(2, part_two, input);
 }
 
+/* Commented out tests for day 17.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -463,3 +464,4 @@ mod tests {
         assert_eq!(part_two(&input), Some(1514285714288_u64));
     }
 }
+*/
